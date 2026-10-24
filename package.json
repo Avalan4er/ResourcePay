@@ -1,0 +1,8 @@
+{
+  "name": "resourcepay",
+  "private": true,
+  "description": "Static single-page bills PWA — shipped code has zero runtime deps; the entry below is test-harness tooling only.",
+  "devDependencies": {
+    "playwright-core": "^1.64.1"
+  }
+}
