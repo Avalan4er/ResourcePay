@@ -11,7 +11,8 @@ run(['fmtRub','fmtInt'], ()=>{ const r=A.fmtRub(1234.5); ok(/,\d{2}\s?\u20bd$/.t
 run(['csvMoney'], ()=>{ eq(A.csvMoney(1234.5),'1234,50'); eq(A.csvMoney(-3),'-3,00'); });
 
 // ---- constants gate coverage
-run(['DEFAULT_CONFIG','STR'], ()=>{ ok(A.DEFAULT_CONFIG.some(c=>c.id==='trash'&&c.fixed===true),'trash fixed-cost default exists'); ok(Object.keys(A.STR).length>=6,'STR has UI copy keys'); });
+run(['DEFAULT_CONFIG','STR'], ()=>{ ok(A.DEFAULT_CONFIG.some(c=>c.id==='trash'&&c.fixed===true),'trash fixed-cost default exists'); ok(Object.keys(A.STR).length>=6,'STR has UI copy keys');
+  ok(['nothingEntered','priceMissing','lblReading','lblPrice','lblName','lblUnit','lblSeedBase','lblActive','lblFixed','applyChanges','saveMonth','savedOk'].every(k=>k in A.STR),'every label/copy the DOM glue paints lives in STR (translation lever)'); });
 
 const st = { config:[
   {id:'g1',name:'Gas A',unit:'m³',price:10,active:true,seed:100},
@@ -62,12 +63,11 @@ run(['buildCsv'], ()=>{
   ok(lines.some(l=>/^2026-08/.test(l)&&l.includes(';;250,25')),'garbage fills money-only cell (absolute+Δ blank) incl amount decimals');
   const iA=lines.findIndex(l=>/^2026-08/.test(l)), iS=lines.findIndex(l=>/^2026-09/.test(l));
   ok(iS>iA&&iA>1,'chronological oldest→newest (Aug line before Sep)');
-  const sep=lines.findIndex(l=>l.startsWith('#cfg')); ok(sep>2,'settings marker block after month rows');
-  ok(lines.slice(sep).some(l=>l===' #cfg;g1;Gas A;m³;1;10;100'.trim()),'meter marker carries seed');
+  ok(!lines.some(l=>l.startsWith('#cfg')),'H1 no settings values leak into the backup file (history-only)');
 });
 
 // descriptors DOM-free render contracts
-run(['describeMonthForm'], ()=>{ const f=A.describeMonthForm(st,'2026-10',{g1:140}).fields[0]; eq(f.diff,10); eq(f.money,100); ok(!f.warn,'positive Δ no warning'); const w=A.describeMonthForm(st,'2026-10',{g1:5}).fields[0]; eq(w.warn,true);
+run(['describeMonthForm'], ()=>{ const f=A.describeMonthForm(st,'2026-10',{g1:140}).fields[0]; eq(f.diff,10); eq(f.money,100); ok(!f.warn,'positive Δ no warning'); const w=A.describeMonthForm(st,'2026-10',{g1:5}).fields[0]; ok(w.warn===true,'negative Δ sets warn flag');
   // re-entering an already-saved month with nothing typed must keep its stored readings (upsertMonth replaces the whole entry)
   const c=A.calcRows(st,'2026-08')[0]; eq(c.saved,130); eq(c.savedPrice,10); const sf=A.describeMonthForm(st,'2026-08').fields[0]; eq(sf.curr,130); eq(sf.diff,30); eq(sf.money,300); });
 
@@ -76,7 +76,9 @@ run(['describeCharts'], ()=>{
   eq(vol.bars.length,1); eq(mny.bars.length,1); eq(vol.bars[0].v,30); eq(vol.pctOf,30); eq(mny.bars[0].v,300);
 });
 
-run(['describeHistoryRows'], ()=>{ const h=A.describeHistoryRows({ ...st, config: [...st.config, { id:'trash', name:'T', unit:'', fixed:true, price:1, active:true, seed:null }] }); eq(h.length,1); eq(h[0].month,'2026-08'); eq(h[0].cells.length,1); ok(h.every(r=>r.month&&r.cells&&r.total!=undefined),'rows expose month/cells/total for DOM glue'); });
+run(['describeHistoryRows'], ()=>{ const h=A.describeHistoryRows({ ...st, config: [...st.config, { id:'trash', name:'T', unit:'', fixed:true, price:1, active:true, seed:null }] }); eq(h.length,1); eq(h[0].month,'2026-08');
+  const p=h[0].parts[0]; eq(p.name,'Gas A'); eq(p.unit,'m\u00b3'); eq(p.delta,30); eq(p.money,300); ok(p.fixed===false,'H2 meter part carries its fixed flag (non-fixed)'); // node:assert.eq treats a falsy actual as an assert-ok check, so boolean flags go through ok()
+  ok(h.every(r=>r.month&&r.total!=undefined&&r.parts&&r.fmt),'H2 month lines expose per-meter breakdown + total for DOM glue'); });
 
 // gate: every export must appear in ≥1 case above
 const EXPORTS=Object.keys(A); const missing=EXPORTS.filter(n=>!ran.has(n));
