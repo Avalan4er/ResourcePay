@@ -67,14 +67,14 @@ run(['buildCsv'], ()=>{
 });
 
 // descriptors DOM-free render contracts
-run(['describeMonthForm','describeHistoryRows','describeCharts'], ()=>{
-  const form=A.describeMonthForm(st,'2026-10');
-  ok(form.fields.length===1&&form.totalMoneyLabel,'form exposes active fields + month total slot');
-  const hist=A.describeHistoryRows(st);
-  eq(hist.length,1); eq(hist[0].month,'2026-08');
-  const chVol=A.describeCharts(st,'volume'), chMny=A.describeCharts(st,'money');
-  eq(chVol.length,chMny.length); ok(chVol.every(g=>g.bars.length>0||g.empty),'one group per active resource, bars carry month values');
+run(['describeMonthForm'], ()=>{ const f=A.describeMonthForm(st,'2026-10',{g1:140}).fields[0]; eq(f.diff,10); eq(f.money,100); ok(!f.warn,'positive Δ no warning'); const w=A.describeMonthForm(st,'2026-10',{g1:5}).fields[0]; eq(w.warn,true); });
+
+run(['describeCharts'], ()=>{
+  const vol=A.describeCharts(st,'volume')[0], mny=A.describeCharts(st,'money')[0];
+  eq(vol.bars.length,1); eq(mny.bars.length,1); eq(vol.bars[0].v,30); eq(vol.pctOf,30); eq(mny.bars[0].v,300);
 });
+
+run(['describeHistoryRows'], ()=>{ const h=A.describeHistoryRows({ ...st, config: [...st.config, { id:'trash', name:'T', unit:'', fixed:true, price:1, active:true, seed:null }] }); eq(h.length,1); eq(h[0].month,'2026-08'); eq(h[0].cells.length,1); ok(h.every(r=>r.month&&r.cells&&r.total!=undefined),'rows expose month/cells/total for DOM glue'); });
 
 // gate: every export must appear in ≥1 case above
 const EXPORTS=Object.keys(A); const missing=EXPORTS.filter(n=>!ran.has(n));

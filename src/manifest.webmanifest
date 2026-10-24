@@ -1,0 +1,9 @@
+{
+  "name": "ResourcePay",
+  "short_name": "ResourcePay",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f2ef",
+  "theme_color": "#5b4c7d"
+}

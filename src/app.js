@@ -6,6 +6,7 @@ export const STR = {
   negativeDiff: 'reading decreased vs previous — new meter?', noSeedPrev: 'no baseline yet (set seed in Settings)',
   seedRequired: 'Enter the latest known reading of this meter', badNumber: 'Reading must be a whole number',
   csvDate: 'date', csvTotal: 'total ₽', ruble: '₽', deltaMark: 'Δ ',
+  noStorage: 'this browser cannot persist data (secure context needed) — history stays in-memory', saved: 'saved ✓',
 };
 export const DEFAULT_CONFIG = [
   { id: 'gas', name: 'Gas', unit: 'm³', price: 0, active: true, seed: null },
@@ -32,11 +33,13 @@ export function resolvePrev(history, id, month, seed) {
 function rowDelta(state, row, month) { if (row.fixed) return null; const c = state.config.find(c => c.id === row.ref); const prev = resolvePrev(state.history, row.ref, month, c?.seed ?? null); return prev == null ? null : row.curr - prev; }
 function rowMoneyOf(state, row, month) { if (row.fixed) return row.curr * row.price; const d = rowDelta(state, row, month); return d == null ? 0 : d * row.price; }
 
-// form rows: active meters only, prev resolved w/ placeholders until curr entered
+// form rows: active meters only, prev resolved w/ placeholders until curr entered. `saved`/`savedPrice` carry the month's existing row so re-entering a month keeps untouched readings instead of silently dropping them.
 export function calcRows(state, month) {
-  return state.config.filter(c => c.active !== false).map(c => ({
+  const saved = state.history.find((e) => e.month === month);
+  return state.config.filter((c) => c.active !== false).map((c) => ({
     ref: c.id, name: c.name, unit: c.unit, fixed: !!c.fixed, curr: null,
     prev: resolvePrev(state.history, c.id, month, c.seed), diff: null, money: null, warn: false,
+    saved: saved?.rows.find((r) => r.ref === c.id)?.curr ?? null, savedPrice: saved?.rows.find((r) => r.ref === c.id)?.price ?? null,
   }));
 }
 
@@ -92,8 +95,17 @@ export function buildCsv(state) {
   return lines.join('\n');
 }
 
-export function describeMonthForm(state, month) {
-  return { fields: calcRows(state, month), totalMoneyLabel: STR.monthTotal };
+// form descriptor incl optional current form values/price edits → pure data for DOM glue (one contract drives both blank form & live preview):
+export function describeMonthForm(state, month, vals = {}, prices = {}) {
+  const rows = calcRows(state, month).map(f => {
+    const curr = vals[f.ref] ?? f.saved; // untouched fields fall back to the month's stored reading so a re-save never silently drops other meters
+    if (curr == null) return f;
+    f.curr = curr;
+    const row = { ref: f.ref, fixed: f.fixed, curr, price: prices[f.ref] ?? f.savedPrice ?? state.config.find((c) => c.id === f.ref)?.price ?? 1 };
+    const d = rowDelta(state, row, month); f.diff = d; f.money = rowMoneyOf(state, row, month); f.warn = d != null && d < 0;
+    return f;
+  });
+  return { fields: rows, totalMoney: rows.reduce((t, f) => t + (f.money ?? 0), 0), totalMoneyLabel: STR.monthTotal };
 }
 export function describeHistoryRows(state) {
   return state.history.map(e => {
