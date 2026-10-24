@@ -6,19 +6,21 @@
 .tabs button{min-width:var(--tap);min-height:var(--tap);border:none;border-radius:99px;padding:.5rem 1.05rem;cursor:pointer;font-weight:600}
 .tabs button.on{background:var(--accent);color:#fffdf8;box-shadow:.2rem .3rem .7rem #39324a55}
 .banner{position:absolute;left:.6rem;right:.6rem;top:-.1rem;background:var(--warn);color:#fffdf8;border-radius:.8rem;padding:.5rem .9rem;text-align:center;font-size:.88em;box-shadow:.2rem .4rem 1rem #0002}
-.card{background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cpath d='m0 90L45 0l45 0z' fill='%23efe9f596' opacity='.5'/%3E%3C/svg%3E") no-repeat right bottom;background-size:cover;border-radius:1.15rem;box-shadow:.25rem .5rem 1.5rem #39324a2e;padding:.85rem 1rem;display:flex flex-direction:column gap:.7rem;width:min(100%,calc(3*var(--tap)+6vw))}
+.card{background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cpath d='m0 90L45 0l45 0z' fill='%23efe9f596' opacity='.5'/%3E%3C/svg%3E") no-repeat right bottom;background-size:cover;border-radius:1.15rem;box-shadow:.25rem .5rem 1.5rem #39324a2e;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.55rem}
 .card button{border:none;border-radius:99px;padding:.6rem 1.1rem;min-height:var(--tap);background:var(--accent);color:#fffdf8;font-weight:650;cursor:pointer}
-.card .row{display:flex flex-wrap:wrap gap:.4rem;padding:.32rem .7rem;border-radius:.65rem;background:#fbf6ea;font-size:.92em}
-.field{display:flex flex-direction:column gap:.3rem;padding:.55rem .75rem;border-radius:.85rem;background:var(--card);box-shadow:.1rem .2rem .9rem #39324a1d;width:min(50%,13.6rem);font-size:.86em}
-.field b,.chart h4{font-weight:650;font-size:.94em;display:inline-block;width:100%}
-.field i.prev,.field s.pv{display:block;width:min(100%,9.2rem);margin-top:auto;font-size:.9em;white-space:pre-wrap}
-.field s.pv{color:hsl(268 34% 58%)}
-.field input[type=number],.field input[type=text],.cfgRow input,.cfgNew input{-webkit-tap-highlight-color:transparent;border-radius:.45rem;font-size:1.05em;padding:.6rem;background:#fffe;border:1px solid #d8d2ec;color:var(--ink)}
-select{border-radius:.45rem;font-size:.9em}option{height:auto;min-height:1px}
-.cfgRow,.cfgNew{display:flex flex-wrap:wrap gap:.35rem;padding:.5rem .7rem;border-radius:.75rem;background:#f2edf9;font-size:.86em;width:min(100%,calc(4*var(--tap)+8vw))}
-.cfgRow input[type=checkbox]{width:1.9rem;height:1.9rem;border-radius:.45rem}
-.chart{display:flex align-items:end;gap:.32rem;height:9rem;padding:.5rem .65rem;border-radius:.95rem;background:#f0ebfa;width:min(58vw,calc(100%-1.2rem));font-size:.78em}
-.chart i{width:min(42px,max(28px,calc((100% - 3rem) / 6)));border-radius:.35rem .35rem 0 0;min-height:3px;background:hsl(var(--h),62%,78%);color:var(--ink);display:flex align-items:end justify-content:center;padding-bottom:.15rem}
+.card .row{display:flex;flex-wrap:wrap;gap:.4rem;padding:.32rem .7rem;border-radius:.65rem;background:#fbf6ea;font-size:.92em}
+.field{display:flex;flex-direction:column;gap:.4rem;padding:.55rem .75rem;border-radius:.85rem;background:var(--card);box-shadow:.1rem .2rem .9rem #39324a1d;margin:.5rem 0;font-size:.9em}
+.cfgRow,.cfgNew{display:flex;flex-direction:column;gap:.4rem;padding:.6rem .75rem;border-radius:.75rem;background:#f2edf9;font-size:.86em;margin:.55rem 0}
+select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem}option{height:auto;min-height:1px}
+.chart{display:flex;align-items:end;gap:.32rem;height:9rem;padding:.5rem .65rem;border-radius:.95rem;background:#f0ebfa;width:min(100%,calc(100% - 1rem));margin:.5rem 0;font-size:.78em}
+.chart i{width:min(42px,max(28px,calc((100% - 3rem) / 6)));border-radius:.35rem .35rem 0 0;min-height:3px;background:hsl(var(--h),62%,78%);color:var(--ink);display:flex;align-items:end;justify-content:center;padding-bottom:.15rem}
 .chart i.neg{background:#f3bcb6}
 .chart i span{writing-mode:vertical-rl;font-size:8.5px;letter-spacing:.04em;opacity:.78;text-align:start}
 @supports not (overscroll-x:none){body{padding:1rem}}
+
+/* B2/B4/B5/C1/S2/S4/S5: the earlier file dropped whole declarations because of missing semicolons (cards collapsed) and had no caps on input widths (controls spanned 2/3 of the screen). Every control is now capped and stacked with its label in a column, so nothing overlaps or sits stranded. */
+[hidden]{display:none}i.lbl{display:block;font-size:.78em;color:hsl(268 30% 46%)}i.tag{font-size:.78em;opacity:.72}
+.field input,.cfgRow input,.cfgNew input{width:min(100%,5.4rem);min-height:var(--tap);border:.12rem solid #39324a66;border-radius:.5rem;padding:.25rem .45rem;background:#fffdf8;accent-color:var(--accent)}
+.cfgRow input[type=checkbox]{width:var(--tap);height:var(--tap)}
+input[type=radio][data-el="mode-toggle"],input[type=radio][data-el=modeToggle]{min-width:var(--tap);min-height:var(--tap);accent-color:var(--accent)}
+.field i.prev,.field s.pv{font-size:.86em}
