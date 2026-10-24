@@ -1,5 +1,5 @@
 // Integration-only DOM/picker/event glue — names per SPEC Testing strategy: bootLoad, persist(saveState path), tabSwitch, applyMonthForm, refreshPreviews, applyHistory+exportCsvFile, applyCharts(mode toggle), settingsApply/addMeter. Math NEVER here: src/app.js descriptors own all calcs. shortcut: tabs re-render via innerHTML each action — bills state is one flat person's data, irrelevant cost.
-import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js';
+import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, clearHistory, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js';
 import { loadState, saveState } from './storage.js';
 
 let state = { config: [...DEFAULT_CONFIG], history: [] };
@@ -7,11 +7,12 @@ let mode = 'volume', curTab = 'tabBills', bannerTxt = '', formObs = null, curMon
 const monthOptions = () => { const n = new Date(); return [...Array(24)].map((_, i) => { const d = new Date(n.getFullYear(), n.getMonth() - i, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }); }; // (_, i): Array(24) holes arrive as undefined elements, only the index is useful
 
 let toastHold = null; // B9/S6: a success copy that never clears reads like a permanent status line — hold it ~3.5s only; error banners stay painted because they need action
-const toast = (t, hold = false) => { bannerTxt = t; const root = document.getElementById('app'); if (!root) return; const b = root.querySelector('b.banner'); if (toastHold) { clearTimeout(toastHold); toastHold = null; } if (!t) { if (b) b.remove(); return; } if (b) { b.textContent = t; } else { const n = el('b', 'banner'); n.textContent = t; root.insertBefore(n, root.firstChild); } if (hold) toastHold = setTimeout(() => { toastHold = null; toast(''); }, 3500); }; // banner-only tweak: a full repaint would drop the typed readings from the entry form and later re-saves would silently delete other meters' rows
+const toast = (t, hold = false) => { bannerTxt = t; const root = document.getElementById('app'); if (!root) return; const b = root.querySelector('b.banner'); if (toastHold) { clearTimeout(toastHold); toastHold = null; } if (!t) { if (b) b.remove(); return; } if (b) { b.textContent = t; b.dataset.kind = hold ? 'ok' : 'err'; } else { const n = el('b', 'banner'); n.textContent = t; n.dataset.kind = hold ? 'ok' : 'err'; root.insertBefore(n, root.firstChild); } if (hold) toastHold = setTimeout(() => { toastHold = null; toast(''); }, 3500); }; // G1: data-kind is the only difference between a success copy and an error copy — style.css paints ok green, err warn; banner-only tweak: a full repaint would drop the typed readings from the entry form and later re-saves would silently delete other meters' rows
 
 async function persist(s) { try { state = await saveState(s); window.rpSaved = (window.rpSaved ?? 0) + 1; toast(STR.savedOk, true); } catch (e) { console.warn('ResourcePay OPFS save failed:', e, e?.stack); document.title = 'STORAGE-SAVE:' + (e?.message ?? e); window.rpSaved = (window.rpSaved ?? 0) + 1; toast(STR.noStorage); state = s; } } // rpSaved counter is a harness-only probe point: acceptance waits for the save round-trip instead of sleeping a fixed beat
 
-window.tabSwitch = k => { curTab = k; renderAll(); };
+let pendingClear = false; // G7 arming flag for the destructive clear-history action — browsing away from Settings disarms it so a wipe always needs two consecutive taps in that tab
+window.tabSwitch = k => { curTab = k; pendingClear = false; renderAll(); };
 
 function applyMonthForm() {
   const box = el('div', 'card'); box.dataset.el = 'formCard';
@@ -32,15 +33,16 @@ function applyMonthForm() {
 
 const monthSelect = () => { const s = document.createElement('select'); s.dataset.el = 'month'; monthOptions().forEach(x => { const o = document.createElement('option'); o.value = x; o.textContent = x; s.append(o); }); return s; }; // B1: options need visible text or the chooser renders as an empty box (B4/B2 CSS aside)
 
-function fieldRow(f) { // B7: each input carries its own STR label; B8: the price input is hidden while it equals its default so a row reads as one reading field
+function fieldRow(f) { // B7: each input carries its own STR label; B8: the price input is hidden while it equals its default so a row reads as one reading field; G5/G6: a fixed-cost row has neither a baseline line nor a ₽/unit multiplier — the number typed IS rubles
   const row = el('div', 'field'); row.dataset.ref = f.ref;
   const def = f.savedPrice ?? state.config.find((c) => c.id === f.ref)?.price ?? 0;
-  row.append(el('b', '', `${f.name} · ${f.unit}`), el('i', 'prev', prevText(f)));
+  row.append(el('b', '', `${f.name} · ${f.unit}`)); if (!f.fixed) row.append(el('i', 'prev', prevText(f)));
   const pv = el('s', 'pv'); pv.dataset.role = 'pv';
-  const cur = fld('curr', f.saved ?? undefined); const pr = fld('price', def); pr.dataset.def = String(def);
-  const l1 = el('i', 'lbl'); l1.dataset.for = 'curr'; l1.textContent = STR.lblReading;
-  const l2 = el('i', 'lbl'); l2.dataset.for = 'price'; l2.textContent = STR.lblPrice;
-  row.append(l1, cur, l2, pr, pv); syncPrice(row); return row;
+  const cur = fld('curr', f.saved ?? undefined);
+  const l1 = el('i', 'lbl'); l1.dataset.for = 'curr'; l1.textContent = f.fixed ? STR.lblAmount : STR.lblReading;
+  row.append(l1, cur);
+  if (!f.fixed) { const pr = fld('price', def); pr.dataset.def = String(def); const l2 = el('i', 'lbl'); l2.dataset.for = 'price'; l2.textContent = STR.lblPrice; row.append(l2, pr); } // G6: no multiplier control at all on garbage rows
+  row.append(pv); syncPrice(row); return row;
 }
 // B8 honest rule: the bills price input is prefilled with that month's effective ₽/unit, so it must STAY in the row (tappable, SPEC user story 1 "editable afterwards"); hiding a tappable control is a UX regression — clutter is removed by styling instead. hidden only while the user literally left it untouched AND its value equals the config default.
 const syncPrice = (row) => { const i = inp(row, 'price'), l = row.querySelector('[data-for=price]'); if (!i || !l) return; const dflt = Number(i.dataset.def ?? 0); const edited = i.value !== '' && Number.isFinite(+i.value) && +i.value !== dflt; i.hidden = !edited; l.hidden = !edited; }; // B8 evidence: hidden attr keeps the field out of the row's visual stack (CSS [hidden] rule)
@@ -69,9 +71,9 @@ async function exportCsvFile() {
 }
 
 function applyCharts() {
-  const box = el('div', 'card'); // C2 host card keeps the radio + both mode labels so its meaning is visible
-  const tgl = document.createElement('input'); tgl.type = 'radio'; tgl.dataset.el = 'modeToggle'; tgl.checked = mode === 'money'; tgl.onclick = () => { mode = mode === 'volume' ? 'money' : 'volume'; renderAll(); }; // C2: a real radio control whose two labels (below) name the modes, not an unlabeled button
-  const lv = el('i', 'lbl'); lv.dataset.for = 'chartVolume'; lv.textContent = STR.chartVolume; const lm = el('i', 'lbl'); lm.dataset.for = 'chartMoney'; lm.textContent = STR.chartMoney; box.append(lv, lm, tgl);
+  const box = el('div', 'card'); // C2/G4 host card carries the mode switch and its labels
+  const knob = (label, mark, isMoney) => { const l = el('i', 'lbl'); l.dataset.for = mark; l.textContent = label; const k = document.createElement('input'); k.type = 'radio'; k.dataset.for = mark; k.checked = (mode === 'money') === isMoney; if (isMoney) k.dataset.el = 'modeToggle'; k.onclick = () => { const want = isMoney ? 'money' : 'volume'; if (mode === want) return; mode = want; renderAll(); }; box.append(l, k); return k; }; // G4: one radio knob per mode, each directly under its own STR label ⇒ an iOS-style segmented switch with BOTH states visible
+  knob(STR.chartVolume, 'chartVolume', false); knob(STR.chartMoney, 'chartMoney', true);
   describeCharts(state, mode).forEach((g, i) => { const card = el('div', 'chart'); card.dataset.res = g.id; card.style.setProperty('--h', String(i * 47)); card.append(el('h4', '', g.name + (mode === 'volume' && !g.fixed ? ` · ${g.unit}` : '')));
     if (!g.empty) g.bars.forEach(b => { const bar = document.createElement('i'); bar.dataset.month = b.month; const label = mode === 'money' ? fmtRub(b.v) : fmtInt(b.v); bar.dataset.v = label; bar.style.height = Math.max(2, g.pctOf ? Math.round(Math.abs(b.v) / g.pctOf * 100) : 2) + '%'; if (b.v < 0) bar.classList.add('neg'); bar.append(el('span', '', `${label} ${b.month}`)); card.append(bar); });
     box.append(card); }); return box;
@@ -86,13 +88,16 @@ function applySettings() {
     const l2 = el('i', 'lbl'); l2.dataset.for = 'price'; l2.textContent = STR.lblPrice; const pr = fld('price', c.price);
     const l3 = el('i', 'lbl'); l3.dataset.for = 'active'; l3.textContent = STR.lblActive; const sw = document.createElement('input'); sw.type = 'checkbox'; sw.dataset.role = 'active'; sw.checked = c.active !== false;
     row.append(l1, nm, l2, pr, l3, sw); if (!c.fixed) { const l4 = el('i', 'lbl'); l4.dataset.for = 'seed'; l4.textContent = STR.lblSeedBase; row.append(l4, fld('seed', c.seed)); } box.append(row); });
-  const add = el('div', 'cfgNew'); const nm2 = document.createElement('input'); nm2.type = 'text'; nm2.dataset.role = 'name'; const un2 = document.createElement('input'); un2.type = 'text'; un2.dataset.role = 'unit'; un2.setAttribute('value', 'm³'); const pr2 = fld('price', 0); const sd2 = fld('seed'); // S5: every field labelled so a person knows what to type
-  add.append(el('i', '', STR.seedRequired));
-  [['name', STR.lblName], ['unit', STR.lblUnit], ['price', STR.lblPrice], ['seed', STR.lblSeedBase]].forEach((f) => { const lab = el('i', 'lbl'); lab.dataset.for = f[0]; lab.textContent = f[1]; add.append(lab); });
-  add.append(nm2, un2, pr2, sd2);
-  // new meter needs the odometer baseline; without it month-1 diffs would be wrong, so seed is mandatory (updateConfig throws otherwise too).
+  const add = el('div', 'cfgNew'); add.append(el('b', '', STR.addMeterTitle)); // G9: card names what it does; the seed-required sentence is a field hint below, not the header
+  const nm2 = document.createElement('input'); nm2.type = 'text'; nm2.dataset.role = 'name';
+  const un2 = document.createElement('input'); un2.type = 'text'; un2.dataset.role = 'unit'; un2.setAttribute('value', 'm³');
+  const pr2 = fld('price', 0); const sd2 = fld('seed');
+  [[nm2, 'name', STR.lblName], [un2, 'unit', STR.lblUnit], [pr2, 'price', STR.lblPrice], [sd2, 'seed', STR.lblSeedBase]].forEach(([i, role, label]) => { const lab = el('i', 'lbl'); lab.dataset.for = role; lab.textContent = label; add.append(lab, i); }); // G8: one label directly above its own input (same pairing as fieldRow), not four labels then four inputs
+  add.append(el('i', 'tag', STR.seedRequired)); // new meter needs the odometer baseline; without it month-1 diffs would be wrong, so seed is mandatory (updateConfig rejects it otherwise too)
   const ab = document.createElement('button'); ab.textContent = '+'; ab.dataset.el = 'addBtn'; ab.onclick = () => { if (!nm2.value.trim() || sd2.value === '' || !Number.isFinite(+sd2.value)) return toast(STR.seedRequired); try { state = updateConfig(state, { id: 'm' + Date.now().toString(36), name: nm2.value.trim(), unit: un2.value || 'm³', price: +(pr2.value || 0), active: true, seed: Math.round(+sd2.value) }); persist(state); renderAll(); } catch (_) { toast(STR.seedRequired); } }; // adding a meter is structural => repaint so the new row shows
   add.append(ab); box.append(add);
+  const clr = document.createElement('button'); clr.textContent = STR.clearHistory; clr.dataset.el = 'clearBtn'; clr.onclick = () => { if (!pendingClear) { pendingClear = true; return toast(STR.confirmClear); } pendingClear = false; state = clearHistory(state); persist(state); renderAll(); }; // G7 task: wiping every saved month is destructive, so it takes two taps (first arms + paints the confirm copy); tabSwitch disarms
+  box.append(clr);
   const apply = document.createElement('button'); apply.textContent = STR.applyChanges; apply.dataset.el = 'applyBtn'; apply.onclick = () => settingsApply(); // S7: an action verb on the button, not a past-tense status line
   box.append(apply); return box;
 }
