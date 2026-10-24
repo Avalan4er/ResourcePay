@@ -1,0 +1,12 @@
+# agent/tooling dirs
+.opencode/
+.vscode/
+
+# python dev-server artifacts
+__pycache__/
+*.pyc
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
