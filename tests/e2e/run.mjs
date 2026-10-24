@@ -228,8 +228,8 @@ const cfgIds = await page.evaluate(() => [...document.querySelectorAll('[data-id
 chk('S7 Settings action button reads as an action (STR.applyChanges), not a saved-status', String(await page.evaluate(() => document.querySelector('[data-el=applyBtn]')?.textContent ?? '')) === 'Apply changes');
 const cfgHead = await page.evaluate(() => [...document.querySelectorAll('[data-id]')].map((r) => r.querySelector('b')?.textContent ?? ''));
 chk('S1 config headers no longer spam "no baseline yet" placeholders', cfgIds.length >= 3 && cfgHead.every((t) => !String(t).includes('no baseline yet')));
-const cfgLbl = await page.evaluate(() => [...document.querySelectorAll('[data-id] i.lbl')].map((e) => e.textContent));
-chk('S3 every config row labels its inputs (name/price/seed/active copy from STR)', cfgLbl.length >= 3 * cfgIds.length && cfgLbl.every((t) => String(t).trim() !== ''));
+const cfgLab = await page.evaluate(() => { const rows = [...document.querySelectorAll('[data-id]')]; let un = 0, lab = 0; rows.forEach((r) => [...r.querySelectorAll('input[data-role]')].forEach((i) => { const t = String(r.querySelector(`i.lbl[data-for=${i.getAttribute('data-role')}`)?.textContent ?? '').trim(); if (t) lab++; else un++; })); return { un, lab }; }); // G6 changed which controls a row owns ⇒ assert the pairing structurally, not a fixed labels-per-row count
+chk('S3 every config field is labelled by its own STR label (rows need no label for controls they do not carry)', cfgLab?.un === 0 && (cfgLab?.lab ?? 0) >= 15); // meters: name/price/active/seed; garbage row: name/active only
 await frames(); const cfgGeo = []; for (const id of cfgIds) cfgGeo.push(await rowKids('[data-id=' + id + ']')); // S2/S4 evidence: per-row controls + their stacking
 chk('S2 settings inputs bounded width (<=8rem) and inside their row', cfgGeo.every((g) => g.kids.length > 0 && g.kids.every((k) => inside(g.r, k, 4) && k[2] <= 120)));
 chk('S4 enable-toggle controls hug the row\'s left edge (<=3rem) instead of stranding across the page', cfgGeo.every((g) => g.kids.length > 0 && leftOff(g.r, g.kids) <= 48 && stackGaps(g.kids).every((x) => x >= 2)));
@@ -304,6 +304,9 @@ const addCard = await page.evaluate((seedCopy) => { const c = document.querySele
 chk('G9 the add-new-meter card header names the card (STR.addMeterTitle)', addCard?.head === AP.addMeterTitle);
 chk('G8 each add-field carries its label immediately above its own input', addCard?.pairs === true && (addCard?.labels ?? 0) >= 4);
 chk('G9 the seed-required sentence stays visible as a field hint, not the header', addCard?.hint === true);
+const cfgShape = await page.evaluate(() => [...document.querySelectorAll('[data-id]')].map((r) => ({ id: r.dataset.id, head: String(r.querySelector('b')?.textContent ?? ''), priceInput: r.querySelector('[data-role=price]') !== null }))); // G6c same Settings card
+chk('G6c the garbage Settings row carries no ₽/unit multiplier and its header states no price figure', (cfgShape.find((r) => /\/month/.test(r.head)) ?? { priceInput: true, head: '' }).priceInput === false && !String(cfgShape.find((r) => /\/month/.test(r.head))?.head ?? '@').includes('@'));
+chk('G6 meters still own their editable ₽/unit field in Settings', cfgShape.filter((r) => r.priceInput).length === 4); // gas/electricity/water/Boiler
 
 await tab('tabHistory'); const monthsBefore = (await snap()).rows.map((r) => r.m).sort(); // G7 task: clearing saved months, destructive ⇒ two taps
 chk('G7 precondition: there are saved months to erase', monthsBefore.length >= 2);
