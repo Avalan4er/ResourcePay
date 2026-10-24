@@ -7,6 +7,9 @@ export const STR = {
   seedRequired: 'Enter the latest known reading of this meter', badNumber: 'Reading must be a whole number',
   csvDate: 'date', csvTotal: 'total ₽', ruble: '₽', deltaMark: 'Δ ',
   noStorage: 'this browser cannot persist data (secure context needed) — history stays in-memory', saved: 'saved ✓',
+  saveMonth: 'Save this month', applyChanges: 'Apply changes', savedOk: 'Saved ✓',
+  nothingEntered: 'Nothing entered — type at least one reading', priceMissing: 'price not set (enter ₽ per unit in Settings)',
+  lblReading: 'current reading', lblPrice: '₽ per unit', lblName: 'name', lblUnit: 'unit', lblSeedBase: 'latest known reading', lblActive: 'used?', lblFixed: 'fixed monthly cost, no baseline needed',
 };
 export const DEFAULT_CONFIG = [
   { id: 'gas', name: 'Gas', unit: 'm³', price: 0, active: true, seed: null },
@@ -71,7 +74,7 @@ export function updateConfig(state, patch) {
   return { ...state, config: cfg };
 }
 
-// CSV wide table per Success#5 — one row/month oldest→newest, meter groups uniform labels (garbage money-only cells), #cfg marker block after rows incl seed; orphan refs keep columns forever.
+// CSV wide table per Success#5 — one row/month oldest→newest, meter groups uniform labels (garbage money-only cells); HISTORY-ONLY file (bug H1: no #cfg settings block — a fresh-device import would need an importer, out of scope; orphan refs keep columns forever).
 export function buildCsv(state) {
   const months = state.history.map(e => e.month).sort();
   const groups = []; const seen = new Set();
@@ -91,7 +94,7 @@ export function buildCsv(state) {
     }
     cells.push(csvMoney(total)); lines.push(cells.join(';'));
   }
-  for (const c of state.config) lines.push(['#cfg', c.id, label(c.id), c.unit, c.active !== false ? '1' : '0', String(c.price).replace('.', ','), c.seed == null ? '' : String(c.seed)].join(';'));
+  // H1: no config/seed metadata block — the backup is history-only (restoring onto a fresh device would need an importer, out of scope)
   return lines.join('\n');
 }
 
@@ -102,19 +105,23 @@ export function describeMonthForm(state, month, vals = {}, prices = {}) {
     if (curr == null) return f;
     f.curr = curr;
     const row = { ref: f.ref, fixed: f.fixed, curr, price: prices[f.ref] ?? f.savedPrice ?? state.config.find((c) => c.id === f.ref)?.price ?? 1 };
-    const d = rowDelta(state, row, month); f.diff = d; f.money = rowMoneyOf(state, row, month); f.warn = d != null && d < 0;
+  const d = rowDelta(state, row, month); f.diff = d; f.money = rowMoneyOf(state, row, month); f.warn = d != null && d < 0;
+    // honest preview copy: unknown baseline or unset ₽/unit must not read as a real 0 figure (bug cases B3/B10)
+    f.hint = f.fixed ? null : f.prev == null ? STR.noSeedPrev : row.price === 0 ? STR.priceMissing : null;
     return f;
   });
   return { fields: rows, totalMoney: rows.reduce((t, f) => t + (f.money ?? 0), 0), totalMoneyLabel: STR.monthTotal };
 }
-export function describeHistoryRows(state) {
-  return state.history.map(e => {
-    let total = 0; const cells = [];
+export function describeHistoryRows(state) { // H2: each line carries a per-meter breakdown (name/unit/Δ/₽), not just the total — totals come from that row's stored prices
+  return state.history.map((e) => {
+    let total = 0; const parts = []; const cells = [];
     for (const r of e.rows) {
-      total += rowMoneyOf(state, r, e.month);
-      cells.push(r.fixed ? fmtInt(r.curr) : fmtInt(rowDelta(state, r, e.month) ?? 0));
+      const money = rowMoneyOf(state, r, e.month); total += money;
+      const d = rowDelta(state, r, e.month);
+      cells.push(r.fixed ? fmtInt(r.curr) : fmtInt(d ?? 0));
+      parts.push({ name: r.name, unit: r.unit, fixed: !!r.fixed, delta: d, money });
     }
-    return { month: e.month, cells, total, fmt: fmtRub(total) };
+    return { month: e.month, parts, cells, total, fmt: fmtRub(total) };
   }).sort((a, b) => b.month.localeCompare(a.month));
 }
 export function describeCharts(state, mode) {
