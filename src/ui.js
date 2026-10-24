@@ -82,12 +82,12 @@ function applyCharts() {
 function applySettings() {
   const box = el('div', 'card');
   state.config.forEach((c) => { const row = el('div', 'cfgRow'); row.dataset.id = c.id; row.dataset.active = c.active !== false ? '1' : '0'; // S4: compact widths in style.css keep the toggle next to its inputs, no stranded third-of-page whitespace
-    row.append(el('b', '', `${c.name} \u00b7 ${c.unit} @ ${fmtRub(c.price)}`)); // S1: no "seed: no baseline yet" spam — an unset baseline is simply an empty labelled input
+    row.append(el('b', '', `${c.name} \u00b7 ${c.unit}${c.fixed ? '' : ` @ ${fmtRub(c.price)}`}`)); // S1: no "seed: no baseline yet" spam; G6: a fixed-cost row has no ₽/unit to show
     if (c.seed != null) row.append(el('i', 'tag', `${STR.lblSeedBase}: ${fmtInt(c.seed)}`)); if (c.fixed) row.append(el('i', 'tag', STR.lblFixed)); // the stored baseline is echoed only when it exists
     const l1 = el('i', 'lbl'); l1.dataset.for = 'name'; l1.textContent = STR.lblName; const nm = document.createElement('input'); nm.type = 'text'; nm.dataset.role = 'name'; nm.setAttribute('value', c.name);
     const l2 = el('i', 'lbl'); l2.dataset.for = 'price'; l2.textContent = STR.lblPrice; const pr = fld('price', c.price);
     const l3 = el('i', 'lbl'); l3.dataset.for = 'active'; l3.textContent = STR.lblActive; const sw = document.createElement('input'); sw.type = 'checkbox'; sw.dataset.role = 'active'; sw.checked = c.active !== false;
-    row.append(l1, nm, l2, pr, l3, sw); if (!c.fixed) { const l4 = el('i', 'lbl'); l4.dataset.for = 'seed'; l4.textContent = STR.lblSeedBase; row.append(l4, fld('seed', c.seed)); } box.append(row); });
+    row.append(l1, nm); if (!c.fixed) row.append(l2, pr); row.append(l3, sw); if (!c.fixed) { const l4 = el('i', 'lbl'); l4.dataset.for = 'seed'; l4.textContent = STR.lblSeedBase; row.append(l4, fld('seed', c.seed)); } box.append(row); }); // G6: a fixed-cost row offers no ₽/unit multiplier (its money is the absolute monthly amount), and no baseline seed input
   const add = el('div', 'cfgNew'); add.append(el('b', '', STR.addMeterTitle)); // G9: card names what it does; the seed-required sentence is a field hint below, not the header
   const nm2 = document.createElement('input'); nm2.type = 'text'; nm2.dataset.role = 'name';
   const un2 = document.createElement('input'); un2.type = 'text'; un2.dataset.role = 'unit'; un2.setAttribute('value', 'm³');
