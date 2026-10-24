@@ -9,6 +9,7 @@ export const STR = {
   noStorage: 'this browser cannot persist data (secure context needed) — history stays in-memory', saved: 'saved ✓',
   saveMonth: 'Save this month', applyChanges: 'Apply changes', savedOk: 'Saved ✓',
   nothingEntered: 'Nothing entered — type at least one reading', priceMissing: 'price not set (enter ₽ per unit in Settings)',
+  lblAmount: 'monthly cost ₽', addMeterTitle: 'Add new meter', clearHistory: 'Clear saved months', confirmClear: 'Tap again to erase all saved months',
   lblReading: 'current reading', lblPrice: '₽ per unit', lblName: 'name', lblUnit: 'unit', lblSeedBase: 'latest known reading', lblActive: 'used?', lblFixed: 'fixed monthly cost, no baseline needed',
 };
 export const DEFAULT_CONFIG = [
@@ -32,9 +33,9 @@ export function resolvePrev(history, id, month, seed) {
   return seed;
 }
 
-// single source for row delta/money given state+entry month; garbage = amount×snapshot price everywhere. shortcut: unknown Δ (seed-less first-ever month) contributes 0 money — form/Settings prompt prevents this in normal UI flow.
+// single source for row delta/money given state+entry month; garbage = absolute monthly ₽ as typed (bug G6: no ₽/unit multiplier — the entered number already IS rubles, and it may differ per month). shortcut: unknown Δ (seed-less first-ever month) contributes 0 money — form/Settings prompt prevents this in normal UI flow.
 function rowDelta(state, row, month) { if (row.fixed) return null; const c = state.config.find(c => c.id === row.ref); const prev = resolvePrev(state.history, row.ref, month, c?.seed ?? null); return prev == null ? null : row.curr - prev; }
-function rowMoneyOf(state, row, month) { if (row.fixed) return row.curr * row.price; const d = rowDelta(state, row, month); return d == null ? 0 : d * row.price; }
+function rowMoneyOf(state, row, month) { if (row.fixed) return row.curr; const d = rowDelta(state, row, month); return d == null ? 0 : d * row.price; }
 
 // form rows: active meters only, prev resolved w/ placeholders until curr entered. `saved`/`savedPrice` carry the month's existing row so re-entering a month keeps untouched readings instead of silently dropping them.
 export function calcRows(state, month) {
@@ -63,6 +64,9 @@ export function upsertMonth(state, month, vals, prices = {}) {
   const history = state.history.filter(e => e.month !== month).concat([entry]).sort((a, b) => b.month.localeCompare(a.month));
   return [{ ...state, history }, warnings];
 }
+
+// G7 task: wipe saved months only (config/meters untouched); CSV of a cleared state is marker+header only
+export function clearHistory(state) { return { ...state, history: [] }; }
 
 // settings: patch by id OR add new; new non-fixed meters require seed baseline (enforced)
 export function updateConfig(state, patch) {
