@@ -5,7 +5,7 @@
 .tabs{position:sticky;top:.5rem;z-index:6;background:#f7f2fdec;border-radius:0 0 1.1rem 1.1rem;padding:.45rem .8rem;display:flex;gap:.45rem;overflow-x:auto;width:min(100vw,calc(100%+2*env(safe-area-inset-left)+2*env(safe-area-inset-right)))}
 .tabs button{min-width:var(--tap);min-height:var(--tap);border:none;border-radius:99px;padding:.5rem 1.05rem;cursor:pointer;font-weight:600}
 .tabs button.on{background:var(--accent);color:#fffdf8;box-shadow:.2rem .3rem .7rem #39324a55}
-.banner{position:absolute;left:.6rem;right:.6rem;top:-.1rem;background:var(--warn);color:#fffdf8;border-radius:.8rem;padding:.5rem .9rem;text-align:center;font-size:.88em;box-shadow:.2rem .4rem 1rem #0002}
+.banner{position:fixed;left:.6rem;right:.6rem;bottom:calc(.55rem+env(safe-area-inset-bottom));z-index:9;pointer-events:none;background:var(--warn);color:#fffdf8;border-radius:.8rem;padding:.5rem .9rem;text-align:center;font-size:.88em;box-shadow:.2rem .4rem 1rem #0002}
 .card{background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cpath d='m0 90L45 0l45 0z' fill='%23efe9f596' opacity='.5'/%3E%3C/svg%3E") no-repeat right bottom;background-size:cover;border-radius:1.15rem;box-shadow:.25rem .5rem 1.5rem #39324a2e;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.55rem}
 .card button{border:none;border-radius:99px;padding:.6rem 1.1rem;min-height:var(--tap);background:var(--accent);color:#fffdf8;font-weight:650;cursor:pointer}
 .card .row{display:flex;flex-wrap:wrap;gap:.4rem;padding:.32rem .7rem;border-radius:.65rem;background:#fbf6ea;font-size:.92em}
@@ -22,5 +22,6 @@ select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem}option{height:a
 [hidden]{display:none}i.lbl{display:block;font-size:.78em;color:hsl(268 30% 46%)}i.tag{font-size:.78em;opacity:.72}
 .field input,.cfgRow input,.cfgNew input{width:min(100%,5.4rem);min-height:var(--tap);border:.12rem solid #39324a66;border-radius:.5rem;padding:.25rem .45rem;background:#fffdf8;accent-color:var(--accent)}
 .cfgRow input[type=checkbox]{width:var(--tap);height:var(--tap)}
-input[type=radio][data-el="mode-toggle"],input[type=radio][data-el=modeToggle]{min-width:var(--tap);min-height:var(--tap);accent-color:var(--accent)}
+.card input[type=radio][data-for="chartVolume"],.card input[type=radio][data-for="chartMoney"]{width:min(100%,5rem);min-height:var(--tap);border:.14rem solid #39324a66;border-radius:99px;background:#f2edf9;accent-color:var(--ok)} /* G4: each mode knob gets its own pill track directly under its label, so both states of the switch are visible (iOS segmented control), not one bare dot */
+.banner[data-kind="ok"]{background:var(--ok)} /* G1: success copy paints green; error banners keep --warn because they need action */
 .field i.prev,.field s.pv{font-size:.86em}
