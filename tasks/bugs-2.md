@@ -25,5 +25,5 @@ Gate-quality note found while fixing this batch: `tests/test.mjs` imported `{ st
 
 ## Harness-side notes (REDs that were the check, not the app)
 - B7 and S3 needed re-wording after G6 removed garbage's multiplier control: both now assert every INPUT in a row owns its label (rows need no label for controls they do not carry), instead of a fixed 2-labels-per-row / 3-labels-per-row count.
-- `entry: every meter field carries an editable price input` counts meter rows only — a fixed-cost row has no ₽/unit control by design (G6).
+- `entry: every meter field carries an editable price input` and the new G6 Settings check now tie the control to the header rule (a `@ price` fragment exists exactly where a multiplier control exists), instead of counting rows with literals.
 - The G8/G9 checks initially ran while the page still showed the Charts tab; per-tab markers mean reading `.cfgNew` requires `tab('tabSettings')` first. That was a harness miss, not an app regression.

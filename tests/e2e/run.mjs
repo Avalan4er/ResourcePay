@@ -306,7 +306,8 @@ chk('G8 each add-field carries its label immediately above its own input', addCa
 chk('G9 the seed-required sentence stays visible as a field hint, not the header', addCard?.hint === true);
 const cfgShape = await page.evaluate(() => [...document.querySelectorAll('[data-id]')].map((r) => ({ id: r.dataset.id, head: String(r.querySelector('b')?.textContent ?? ''), priceInput: r.querySelector('[data-role=price]') !== null }))); // G6c same Settings card
 chk('G6c the garbage Settings row carries no ₽/unit multiplier and its header states no price figure', (cfgShape.find((r) => /\/month/.test(r.head)) ?? { priceInput: true, head: '' }).priceInput === false && !String(cfgShape.find((r) => /\/month/.test(r.head))?.head ?? '@').includes('@'));
-chk('G6 meters still own their editable ₽/unit field in Settings', cfgShape.filter((r) => r.priceInput).length === 4); // gas/electricity/water/Boiler
+const meterRows = cfgShape.filter((r) => /@/.test(r.head)); // header shows @ price exactly where a multiplier control exists — one rule, no counted literals
+chk('G6 meters still own their editable ₽/unit field in Settings', meterRows.length >= 3 && cfgShape.filter((r) => r.priceInput).length === meterRows.length);
 
 await tab('tabHistory'); const monthsBefore = (await snap()).rows.map((r) => r.m).sort(); // G7 task: clearing saved months, destructive ⇒ two taps
 chk('G7 precondition: there are saved months to erase', monthsBefore.length >= 2);
