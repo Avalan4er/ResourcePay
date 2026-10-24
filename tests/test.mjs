@@ -67,7 +67,9 @@ run(['buildCsv'], ()=>{
 });
 
 // descriptors DOM-free render contracts
-run(['describeMonthForm'], ()=>{ const f=A.describeMonthForm(st,'2026-10',{g1:140}).fields[0]; eq(f.diff,10); eq(f.money,100); ok(!f.warn,'positive Δ no warning'); const w=A.describeMonthForm(st,'2026-10',{g1:5}).fields[0]; eq(w.warn,true); });
+run(['describeMonthForm'], ()=>{ const f=A.describeMonthForm(st,'2026-10',{g1:140}).fields[0]; eq(f.diff,10); eq(f.money,100); ok(!f.warn,'positive Δ no warning'); const w=A.describeMonthForm(st,'2026-10',{g1:5}).fields[0]; eq(w.warn,true);
+  // re-entering an already-saved month with nothing typed must keep its stored readings (upsertMonth replaces the whole entry)
+  const c=A.calcRows(st,'2026-08')[0]; eq(c.saved,130); eq(c.savedPrice,10); const sf=A.describeMonthForm(st,'2026-08').fields[0]; eq(sf.curr,130); eq(sf.diff,30); eq(sf.money,300); });
 
 run(['describeCharts'], ()=>{
   const vol=A.describeCharts(st,'volume')[0], mny=A.describeCharts(st,'money')[0];

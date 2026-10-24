@@ -1,4 +1,4 @@
-// Integration-only DOM/picker/event glue — names per SPEC Testing strategy: bootLoad, savePersist, tabSwitch, applyMonthForm(->applyTabBills), refreshPreviews, applyHistory(+exportCsvFile), applyCharts(mode toggle button), settingsApply/addMeter. Math NEVER here: src/app.js descriptors own all calcs. shortcut: tabs re-render via innerHTML each action — bills state is one flat person's data, irrelevant cost.
+// Integration-only DOM/picker/event glue — names per SPEC Testing strategy: bootLoad, persist(saveState path), tabSwitch, applyMonthForm, refreshPreviews, applyHistory+exportCsvFile, applyCharts(mode toggle), settingsApply/addMeter. Math NEVER here: src/app.js descriptors own all calcs. shortcut: tabs re-render via innerHTML each action — bills state is one flat person's data, irrelevant cost.
 import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js';
 import { loadState, saveState } from './storage.js';
 
