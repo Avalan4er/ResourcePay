@@ -1,10 +1,10 @@
 // ResourcePay unit tests: every export needs a case, gate enforced at end.
 import * as A from '../src/app.js';
-import { strict as eq } from 'node:assert';
+import { strictEqual as eq } from 'node:assert/strict'; // NOTE: `import { strict as eq } from 'node:assert'` binds node's truthiness assertion (eq(1,2) passes!) — strictEqual actually compares
 
 let fails = []; const ran = new Set();
 const ok = (c,m)=>{ if(!c) fails.push(m); };
-const run=(names,fn)=>{ names.forEach(n=>ran.add(n)); try{fn();}catch(e){fails.push(e.message||String(e));} };
+const run=(names,fn)=>{ names.forEach(n=>ran.add(n)); try{fn();}catch(e){fails.push(`[${names.join(',')}] ${e.message||String(e)} | ${(e?.stack??'').split('\n')[1]?.trim()??''}`);} }; // failure lines name the case + throw site so evidence stays diagnosable
 
 // ---- fmt helpers
 run(['fmtRub','fmtInt'], ()=>{ const r=A.fmtRub(1234.5); ok(/,\d{2}\s?\u20bd$/.test(r),`fmtRub keeps comma decimals + ₽: ${r}`); eq(A.fmtInt(0),'0'); });
@@ -12,7 +12,7 @@ run(['csvMoney'], ()=>{ eq(A.csvMoney(1234.5),'1234,50'); eq(A.csvMoney(-3),'-3,
 
 // ---- constants gate coverage
 run(['DEFAULT_CONFIG','STR'], ()=>{ ok(A.DEFAULT_CONFIG.some(c=>c.id==='trash'&&c.fixed===true),'trash fixed-cost default exists'); ok(Object.keys(A.STR).length>=6,'STR has UI copy keys');
-  ok(['nothingEntered','priceMissing','lblReading','lblPrice','lblName','lblUnit','lblSeedBase','lblActive','lblFixed','applyChanges','saveMonth','savedOk'].every(k=>k in A.STR),'every label/copy the DOM glue paints lives in STR (translation lever)'); });
+  ok(['nothingEntered','priceMissing','lblReading','lblPrice','lblName','lblUnit','lblSeedBase','lblActive','lblFixed','applyChanges','saveMonth','savedOk','lblAmount','addMeterTitle','clearHistory','confirmClear'].every(k=>k in A.STR),'every label/copy the DOM glue paints lives in STR (translation lever)'); });
 
 const st = { config:[
   {id:'g1',name:'Gas A',unit:'m³',price:10,active:true,seed:100},
@@ -79,6 +79,14 @@ run(['describeCharts'], ()=>{
 run(['describeHistoryRows'], ()=>{ const h=A.describeHistoryRows({ ...st, config: [...st.config, { id:'trash', name:'T', unit:'', fixed:true, price:1, active:true, seed:null }] }); eq(h.length,1); eq(h[0].month,'2026-08');
   const p=h[0].parts[0]; eq(p.name,'Gas A'); eq(p.unit,'m\u00b3'); eq(p.delta,30); eq(p.money,300); ok(p.fixed===false,'H2 meter part carries its fixed flag (non-fixed)'); // node:assert.eq treats a falsy actual as an assert-ok check, so boolean flags go through ok()
   ok(h.every(r=>r.month&&r.total!=undefined&&r.parts&&r.fmt),'H2 month lines expose per-meter breakdown + total for DOM glue'); });
+
+// ---- bug batch 2 pure-logic cases
+run(['describeMonthForm', 'describeCharts'], ()=>{ // G6: a fixed-cost row's entered number IS rubles — no ₽/unit multiplier anywhere in the math
+  const gs = { config: [{id:'t',name:'Trash',unit:'\u20bd/month',price:2,active:true,fixed:true,seed:null}], history: [{month:'2026-08',rows:[{ref:'t',name:'Trash',unit:'\u20bd/month',fixed:true,curr:310.5,price:2}]}] };
+  const gsMoney = A.describeCharts(gs,'money')[0].bars[0].v; ok(gsMoney===310.5,`G6 garbage money bar = ${gsMoney}, the absolute monthly ₽ typed (not ×2 config price)`); // eq() is truthiness-based, so explicit equality gives the check teeth
+  const live = A.describeMonthForm(gs,'2026-09',{t:400}).fields[0]; ok(live.money===400,'G6 a fixed row previews its entered rubles as-is even when config price is 2'); ok(live.hint===null,'fixed row carries no baseline/price hint copy'); });
+
+run(['clearHistory'], ()=>{ const s=A.clearHistory(st); ok(s.history.length===0,'G7 history emptied by clearHistory'); ok(s.config.length===st.config.length&&s.config.every((c,i)=>c.id===st.config[i].id),'clearHistory never touches config/meters'); ok(A.buildCsv(s).split('\n').length===2,'cleared state exports marker+header only (config untouched by a history wipe)'); }); // eq() is truthiness-based, so zero-valued comparisons go through ok() explicitly
 
 // gate: every export must appear in ≥1 case above
 const EXPORTS=Object.keys(A); const missing=EXPORTS.filter(n=>!ran.has(n));

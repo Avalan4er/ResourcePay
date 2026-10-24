@@ -81,8 +81,8 @@ chk('B4 meter rows full-width one-per-row (not half the screen)', rowGeo.length 
 chk('B4 meter rows do not sit side by side (same left edge)', rowGeo.every((g, i) => i === 0 || Math.abs(g.r[0] - rowGeo[i - 1].r[0]) < 8));
 const inpStyle = await page.evaluate(() => { const i = document.querySelector('div.field input'); return i ? [getComputedStyle(i).borderWidth, getComputedStyle(i).paddingInline] : ['0px', '0px']; });
 chk('B5 inputs styled (border+padding computed) and their row keeps >=4px vertical rhythm', inpStyle[0] !== '0px' && inpStyle[1] !== '0px' && rowGeo.every((g) => g.all.length > 1 && stackGaps(g.all).every((x) => x >= 4)));
-const lblTxt = await page.evaluate(() => [...document.querySelectorAll('div.field i.lbl')].map((e) => e.textContent));
-chk('B7 every meter row labels its inputs with STR copy', lblTxt.length >= 2 * refsA.length && lblTxt.every((x) => String(x).trim() !== ''));
+const lblStats = await page.evaluate(() => { const rows = [...document.querySelectorAll('div.field[data-ref]')]; let unlabeled = 0, labeled = 0; rows.forEach((r) => [...r.querySelectorAll('input[data-role]')].forEach((i) => { const t = String(r.querySelector(`i.lbl[data-for=${i.getAttribute('data-role')}`)?.textContent ?? '').trim(); if (t) labeled++; else unlabeled++; })); return { unlabeled, labeled }; }); // G6 changed what a row holds: every INPUT must own a label, rows need no label for controls they don't carry
+chk('B7 every meter row labels its own inputs with STR copy', lblStats?.unlabeled === 0 && (lblStats?.labeled ?? 0) >= refsA.length + 1); // one label per input; garbage needs only its reading label
 const visPerRow = []; for (const ref of refsA) visPerRow.push(await visInputs('div.field[data-ref=' + ref + '] input'));
 chk('B8 only the reading input is visible while price equals its default', visPerRow.length === refsA.length && visPerRow.every((arr) => arr.length === 1 && arr[0] === 'curr'));
 await setVal(`[data-ref=${refsA[0]}] [data-role=price]`, 7); await beat(); // B8: previews/hidden flags recompute synchronously on the attribute mutation, so one round-trip is enough
@@ -142,7 +142,8 @@ chk('entry: prev line shows the odometer baseline per meter (not zero)', s.field
 chk('entry: \u0394 + ruble preview updates as soon as a reading is typed', s.fields.filter((f) => f.curr && !/\/month/.test(f.name)).every((f) => (f.pv.includes('\u20bd') || /price not set|no baseline yet/.test(f.pv)) && f.pv.length > 4)); // fixed-cost rows (garbage) intentionally have no \u20bd line; an unset price reads as words instead
 chk('entry: month total money line rendered', s.total.includes('\u20bd'));
 const priceInputs = JSON.parse(String(await read("JSON.stringify([...document.querySelectorAll('div.field[data-ref] [data-role=price]')].length)")));
-chk('entry: every meter field carries an editable price input (defaults from config)', priceInputs === s.fields.length && priceInputs > 0); // per-price arithmetic is unit-verified already
+const meterFields = s.fields.filter((f) => !/\/month/.test(f.name)); // G6: a fixed-cost row has no ₽/unit multiplier at all, so only meters carry one
+chk('entry: every meter field carries an editable price input (defaults from config)', priceInputs === meterFields.length && meterFields.length > 0); // per-price arithmetic is unit-verified already
 await clickAndSave('[data-el=saveBtn]');
 await tab('tabHistory');
 s = await snap(); await diag('afterM0', { rows: s.rows.map((r) => r.m + ':' + r.t), title: await read('document.title') });
@@ -256,6 +257,74 @@ chk('H2 a history line breaks the month down per meter, not just the total', s.r
 
 await page.screenshot({ path: 'test-results/e2e-history.png', fullPage: true });
 await tab('tabCharts'); await frames(); await page.screenshot({ path: 'test-results/e2e-charts-money.png', fullPage: true });
+
+// === bug batch part C — iPhone report 2026-10-25 (tasks/bugs-2.md) -------------
+const meta = await page.evaluate(() => document.querySelector('meta[name=viewport]')?.getAttribute('content') ?? ''); // G2: iOS re-fits/taps-zoom when the declared scale is not locked
+chk('G2 viewport meta declares device-width and switches iOS auto-fit zoom off (shrink-to-fit=no)', /width=device-width/.test(meta) && /shrink-to-fit=no/.test(meta));
+
+await tab('tabBills'); await selectMonth(M1);
+for (const [ref, v] of [['gas', 1105], ['electricity', 5505], ['water', 760], ['trash', 305]]) await setVal('[data-ref=' + ref + '] [data-role=curr]', v); // re-enter the current month (all Δ positive ⇒ the save paints a plain success toast, which G1 reads)
+await beat();
+const gshape = await page.evaluate(() => { const r = document.querySelector('div.field[data-ref=trash]'); if (!r) return null; return { hasPrev: r.querySelector('i.prev') !== null, prevTxt: String(r.querySelector('i.prev')?.textContent ?? ''), head: String(r.querySelector('b')?.textContent ?? '') }; });
+chk('G5 fixed-cost garbage row prints no odometer baseline copy at all', gshape?.hasPrev === false);
+const gLabel = await page.evaluate(() => document.querySelector('div.field[data-ref=trash] [data-for=curr]')?.textContent ?? ''); // G6b: the value typed in IS rubles
+chk('G6b garbage field is labelled as its absolute monthly cost and no ₽/unit multiplier sits in the row', gLabel === AP.lblAmount && (await page.evaluate(() => document.querySelector('div.field[data-ref=trash] [data-role=price]') !== null)) === false);
+const billsTap = await rects('.field input'); // visible controls only (B8 hides an untouched price, so it has no rect)
+chk('G2 every Bills field is a full-size tap target (nothing undersized for iOS to zoom onto)', billsTap.length >= 4 && billsTap.every(([, , w, h]) => w >= 40 && h >= 40));
+
+const nOk = await saves0(); await click('[data-el=saveBtn]');
+chk('G1 save round-trip reported by rpSaved before the toast is read', (await until('OPFS save round-trip done', (x) => (window.rpSaved ?? 0) > x, nOk, 8000)) === true);
+const bOk = await page.evaluate(() => { const b = document.querySelector('b.banner'); if (!b) return null; const c = getComputedStyle(b); const probe = document.createElement('p'); probe.style.color = 'var(--ok)'; document.body.append(probe); const okRgb = getComputedStyle(probe).color; probe.remove(); return { kind: b.dataset.kind, pos: c.position, z: Number(c.zIndex), isOkGreen: c.backgroundColor === okRgb, txt: b.textContent }; }); // G1/G3: toast marked as success + lifted above content + pinned (green read from the app's own --ok token)
+chk('G1 success toast carries an ok kind and paints the app\'s green (--ok)', bOk?.kind === 'ok' && bOk?.isOkGreen === true); // GREEN evidence 2026-10-25: {"kind":"ok","pos":"fixed","z":9,"isOkGreen":true}
+chk('G1/G3 toast is taken out of document flow above content (fixed + z-index over the tab strip)', bOk?.pos === 'fixed' && (bOk?.z ?? 0) >= 9);
+await setVal('[data-ref=gas] [data-role=curr]', '12.5'); await click('[data-el=saveBtn]'); await beat(); // a rejected save paints an error banner that must stay warn-coloured and persistent
+const bErr = await page.evaluate(() => { const b = document.querySelector('b.banner'); if (!b) return null; const c = getComputedStyle(b); return { kind: b.dataset.kind, bg: c.backgroundColor }; });
+chk('G1 error banners keep the warn colour (only success copy turns green)', bErr?.kind === 'err' && bErr?.bg === 'rgb(194, 84, 78)');
+
+await tab('tabCharts'); await frames(); // G3: scroll a page taller than the phone viewport and keep reading the toast
+const scrolled = await page.evaluate(() => { window.scrollTo(0, document.body.scrollHeight); return window.scrollY; });
+chk('G3 evidence holds weight: the Charts page really does overflow one screen', scrolled > 0);
+const onScreen = await page.evaluate(() => { const b = document.querySelector('b.banner'); if (!b) return false; const r = b.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; });
+chk('G3 toast stays inside the viewport once scrolled', onScreen === true);
+
+const knobs = await page.evaluate(() => [...document.querySelectorAll('.card input[type=radio]')].map((k) => ({ for: k.dataset.for ?? '', checked: k.checked }))); // G4: a switch showing both states, not one bare knob
+chk('G4a the mode switch paints BOTH states (two radio knobs, exactly one checked)', knobs.length === 2 && knobs.filter((k) => k.checked).length === 1);
+const pairOk = await page.evaluate(() => { const kids = [...document.querySelector('.card')?.children ?? []]; return ['chartVolume', 'chartMoney'].every((f) => { const i = kids.findIndex((k) => k.dataset.for === f); return i >= 0 && kids[i + 1]?.tagName === 'INPUT' && String(kids[i].textContent).trim() !== ''; }); });
+chk('G4b each knob owns its own STR mode label right above it', pairOk === true);
+const knobRects = await rects('.card input[type=radio]');
+chk('G4 both switch knobs render as full tap targets (>=40px pill tracks)', knobRects.length === 2 && knobRects.every(([, , w, h]) => w >= 40 && h >= 40));
+await click('[data-el=modeToggle]'); await beat(); // tapping the knob the switch already sits on must be a no-op
+chk('G4 tapping the checked knob leaves mode where it is', (await page.evaluate(() => document.querySelector('.card input[type=radio][data-for=chartMoney]')?.checked)) === true);
+await click('[data-for=chartVolume][type=radio]'); await beat(); // iOS switch: tapping the other end picks that mode
+const volBack = await snap();
+chk('G4 tapping the volume knob flips every chart back to volume bars', volBack.cards.some((c) => c.bars.length > 0) && volBack.cards.every((c) => c.bars.every((b) => !String(b.v ?? '').includes('\u20bd'))));
+
+await tab('tabSettings'); // the add-new-meter card belongs to the Settings tab: markers are per-tab, so switch before reading it
+const addCard = await page.evaluate((seedCopy) => { const c = document.querySelector('.cfgNew'); if (!c) return null; const kids = [...c.children]; const role = (r) => kids.findIndex((k) => k.getAttribute('data-role') === r); return { head: String(c.firstElementChild?.textContent ?? ''), hint: (c.textContent || '').includes(seedCopy), pairs: ['name', 'unit', 'price', 'seed'].every((r) => kids.some((k) => k.dataset.for === r) && role(r) >= 0 && kids[role(r) - 1]?.dataset?.for === r), labels: [...c.querySelectorAll('i.lbl')].length }; }, AP.seedRequired); // G8/G9 add-new-meter card layout
+chk('G9 the add-new-meter card header names the card (STR.addMeterTitle)', addCard?.head === AP.addMeterTitle);
+chk('G8 each add-field carries its label immediately above its own input', addCard?.pairs === true && (addCard?.labels ?? 0) >= 4);
+chk('G9 the seed-required sentence stays visible as a field hint, not the header', addCard?.hint === true);
+
+await tab('tabHistory'); const monthsBefore = (await snap()).rows.map((r) => r.m).sort(); // G7 task: clearing saved months, destructive ⇒ two taps
+chk('G7 precondition: there are saved months to erase', monthsBefore.length >= 2);
+await tab('tabSettings');
+const nClr = await saves0(); await click('[data-el=clearBtn]'); await until('confirm copy painted', () => document.querySelector('b.banner') !== null); // first tap only arms the wipe; the confirm banner is its own completion signal (no persist round-trip)
+chk('G7a first tap paints STR.confirmClear instead of erasing history', (await snap()).banner === AP.confirmClear && nClr === await saves0());
+await tab('tabHistory');
+chk('G7a arming the wipe left every saved month intact', (await snap()).rows.map((r) => r.m).sort().join() === monthsBefore.join());
+await tab('tabSettings'); // visiting another tab disarms the pending wipe, so a real user has to tap twice again in Settings
+const nClr2 = await saves0(); await click('[data-el=clearBtn]');
+chk('G7a leaving Settings disarmed the wipe (one more single tap only re-arms, never erases)', (await snap()).banner === AP.confirmClear && nClr2 === await saves0());
+await clickAndSave('[data-el=clearBtn]'); // second consecutive tap in the same tab commits + persists
+await tab('tabHistory');
+chk('G7b the second tap erased all saved months', (await snap()).rows.length === 0);
+await page.reload({ waitUntil: 'networkidle' }); await until('app booted from OPFS', () => document.querySelector('[data-tab=tabBills]') !== null, null, 9000);
+await tab('tabHistory');
+chk('G7b the wipe survived a hard reload (OPFS rewritten, not just in-memory)', (await snap()).rows.length === 0);
+await tab('tabSettings');
+const cfgAfterClear = (await snap()).cfgRows.map((r) => r.id);
+chk('G7 clearing history never touches the meter config', ['gas', 'electricity', 'water', 'trash'].every((id) => cfgAfterClear.includes(id)) && cfgAfterClear.length >= 5);
+
 const titleTag = String(await read('document.title')); // ui.js tags the title on glue throws so iPhone users get a trail without new UI strings
 console.log('[DIAG TITLE]', titleTag);
 await ctx.close(); // guardrail: leave no debug browser/profile behind beyond the reusable e2e dir
