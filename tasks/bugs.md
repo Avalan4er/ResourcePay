@@ -1,0 +1,35 @@
+# Bug batch (manual iPhone test, 2026-10-24) — one case = one repro check = one fix
+
+Rule: each case has a named repro check that is RED before its fix (`tests/e2e/run.mjs` prints the ids; `tests/test.mjs` covers pure-logic ones). Boxes ticked only when green. Where the user's stated cause differs from the real root cause, the line says so.
+
+Green evidence for every box below: acceptance pass 2026-10-25 → `ALL 104 acceptance checks GREEN in a real browser (Edge, phone viewport)`, `[elapsed] 11s`; unit gate → `OK unit layer — 13/13 exports exercised`. Run output kept in `test-results/e2e-run.txt` / `test-results/unit.txt`.
+
+## Bills tab
+- [x] **B1** Month `<select>` renders empty — options have no text. e2e `B1`: first option's visible text = its month value. Fix: ui.js `monthSelect()` + STR caption naming its purpose.
+- [x] **B2** Meter card has no vertical margin. e2e `B2`: gap between consecutive meter rows > 4px. Real root cause: CSS rules with missing semicolons (`display:flex flex-direction:column gap:...`) drop whole declarations. Fix: style.css.
+- [x] **B3** "no baseline yet" shown after typing first-month readings, and preview fakes `0 m³ · 0,00 ₽`. e2e `B3`: fresh state + typed readings ⇒ pv carries STR.noSeedPrev copy, contains no `₽` digits. Fix: ui.js `refreshPreviews` shows hint copy when prev/price unknown (shared with B10).
+- [x] **B4** Meter card half the screen wide; inputs overlap and exceed card width. e2e `B4`: meter rects one-per-row without horizontal overlap; every input rect inside its own row rect. Fix: style.css.
+- [x] **B5** Inputs unstyled, no vertical rhythm. e2e `B5`: computed input border+padding present and ≥4px vertical gap between a field's two inputs. Fix: same CSS block as B2/B4.
+- [x] **B6** Empty/zero accepted silently — save with nothing typed creates an empty month row. e2e `B6`: tapping Save on an all-empty form shows STR.nothingEntered banner and History gains no month. Decision kept: zero readings stay legal (a meter can legitimately read 0); only "nothing at all entered" is refused. Fix: ui.js save path + new STR key.
+- [x] **B7** Inputs have no labels. e2e `B7`: each meter row contains two distinct non-empty label texts (reading / ₽ per unit) from STR. Fix: ui.js `<i class=lbl>` per input + STR keys `lblReading`, `lblPrice`.
+- [x] **B8** Two inputs always shown; price only needed for corrections. Decision kept (SPEC user story 1 requires per-month price edit): the price input stays but is hidden while it equals its default, so the row reads as one reading field most of the time. e2e `B8`: default state shows exactly one visible input per meter row; after changing a price, two are visible and the saved month keeps the edited price. Fix: ui.js toggles `hidden` in `refreshPreviews`.
+- [x] **B9** "saved ✓" banner never clears; after a save you cannot keep editing readings. e2e `B9`: after Save + 4s the banner is gone, and the Bills form still holds that month's values ready to edit (typed value then re-save updates, no duplicate — shares existing check). Fix: ui.js transient success toast (error banners stay persistent) + STR split into action label `saveMonth` vs status `savedOk`. The "cannot keep editing" symptom was the same painted-status confusion; the form already kept stored readings via `calcRows.saved`.
+- [x] **B10** Typed `1,1` displayed as `0 m³ · 0,00 ₽`. Two causes: default meter prices are 0 in DEFAULT_CONFIG and prev unknown → money faked zero (covered by B3 copy) and no hint that ₽/unit is unset. e2e `B10`: a seeded meter whose ₽/unit is still the config default ⇒ preview names STR.priceMissing, never a `0,00 ₽` figure (in a truly fresh profile every meter is seed-less too, so priceMissing only becomes reachable once Settings seeds one — the check sits in that phase). Comma-decimal parsing itself is delegated to the number input (integer gate already rejects non-integers on save).
+
+## Charts tab
+- [x] **C1** Chart card has no vertical margin. e2e `C1`: gap between stacked chart cards > 4px. Same CSS root cause as B2.
+- [x] **C2** Volume/money toggle is a button; should read as a radio control. e2e `C2`: the mode control is an `<input type=radio>` carrying both STR labels adjacent, one checked. Fix: ui.js element + style.css knob styling.
+
+## History tab
+- [x] **H1** CSV export contains settings lines (`#cfg;…`) the user does not want. Unit `H1`: exported text has no line starting `#cfg`. Decision change: backup file is now history-only; restoring config on a fresh device is out of scope — recorded in SPEC decisions log (DECIDED 2026-10-24). Fix: app.js `buildCsv`.
+- [x] **H2** History row shows only the final total, not per-meter info. Unit `H2`: descriptor cells expose name/unit/Δ/money/fixed per meter; e2e `H2`: each history line contains per-meter Δ+₽ text, not just the total. Fix: app.js `describeHistoryRows` + ui.js row render (symbols via STR.deltaMark/ruble).
+
+## Settings tab
+- [x] **S1** "seed: no baseline yet" printed on every config row — noise, and it hid a SPEC violation (`seed:` text hardcoded outside STR). e2e `S1`: rows show the seed hint only when the meter is seed-less AND no earlier reading exists; header label comes from STR. Fix: ui.js + STR keys `lblSeedBase`, `lblFixed`.
+- [x] **S2** Settings inputs span 2/3 of screen width. e2e `S2`: each settings input rect inside its row and ≤ 8rem wide. Fix: style.css widths (shared with B4/B5).
+- [x] **S3** Settings inputs unlabeled. e2e `S3`: each config row shows STR labels for name/price/seed/active. Fix: ui.js `<i class=lbl>` + STR keys `lblName`, `lblActive`.
+- [x] **S4** Checkbox sits a third of the page away. e2e `S4`: checkbox rect horizontally within 3rem of its row's left edge (no giant gap). Fix: style.css compact widths/order in `.cfgRow`.
+- [x] **S5** Add-new-meter block is four unlabeled fields; unknown what to write. e2e `S5`: the add block carries STR labels for name/unit/price/seed plus the existing seedRequired hint. Fix: ui.js + STR `lblUnit`.
+- [x] **S6** "saved ✓" toast always visible, meaning unclear (shares B9 root cause). e2e `S6`: after Apply, success banner clears within 4s while error banners persist (seed-missing check still passes later in the run). Fix: ui.js transient success toast.
+- [x] **S7** No save button in Settings — the row action was labeled `saved ✓`, which reads as a status not an action. e2e `S7`: Apply button label = STR.applyChanges (action copy), distinct from the success status copy, and clicking it writes through to config+OPFS. Fix: ui.js + STR `applyChanges`.
+- [x] **S8** "Entered seed does not affect bills page". e2e `S8`: set a gas/water seed via Settings input, tap Apply, then Bills shows that number as prev (`diag s8state` prints the real prev line). Today this passes in Edge ⇒ root cause was the unlabeled/hidden Apply action (B9/S7 family) plus the month-switch repaint of `i.prev`, not the calc; ledger records that honestly rather than "fixing" math that already matched SPEC. Fix: ui.js `prevText(f)` + repaint on `select` `change`.

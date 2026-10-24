@@ -41,4 +41,5 @@ node tests/e2e/run.mjs     # acceptance layer in a real browser (uses installed 
 
 - Meter readings are treated as odometer registers: first-ever month diffs against the `seed` baseline entered in Settings — confirm your meters do not reset monthly.
 - CSV export uses `showSaveFilePicker` where supported (Chromium) and an `<a download>` fallback elsewhere; the harness cannot click the picker chooser (real gesture required), so verify filename `resourcepay-backup-YYYY-MM-DD.csv` and bytes by hand in Chrome. iOS Safari ignores the `download` attribute — check what iOS does with that tap before shipping.
+- The History tab lists each month as per-meter groups (`name Δvolume unit · money`) plus the month total, and the backup file holds only the format marker + header + one row per month — no settings/seed lines (DECIDED: restoring onto another device would need an importer, out of scope).
 - UI strings come only from the `STR` dictionary in `src/app.js` — hand-translate that one object for Russian, nothing else holds copy.
