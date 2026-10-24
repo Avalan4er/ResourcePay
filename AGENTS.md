@@ -4,6 +4,20 @@ Monthly bills tracker PWA (bills / history+CSV backup / charts / settings tabs),
 
 **SPEC.md is the source of truth — read it before doing anything.**
 
+## Running the tests (gate order: unit green first, then browser, only then "done"/commit)
+
+```sh
+node tests/test.mjs                                  # unit layer: every src/app.js export + coverage gate
+python -m http.server 8123 --bind 127.0.0.1          # one long-lived dev server for the acceptance layer
+node tests/e2e/run.mjs                               # BDD acceptance in a real browser (Edge, 390x844 phone viewport)
+```
+
+- Unit gate prints `OK unit layer — N/N exports exercised`; it fails if any export lacks a case (`test-results/unit.txt`). Import `{ strictEqual as eq } from 'node:assert/strict'` in new cases — node's `strict as eq` binding is a truthiness assert and lauds wrong values.
+- The acceptance runner serves from `http://127.0.0.1:8123/src/index.html`; it launches the installed browser once (`playwright-core` is a devDependency only, nothing shipped depends on it), prints `PASS`/`FAIL` lines plus `[elapsed]`, and exits non-zero when anything is red. Keep ONE runner invocation per verification pass — one persistent browser context, waits on structural conditions (`tab()` markers, `rpSaved` counter, banner polls), never fixed sleeps.
+- Fresh-state runs (the B3/B10/G-style "no baseline" cases) need the OPFS profile deleted first and no browser holding it: kill `msedge.exe`, then delete `C:\Users\avalan4er\AppData\Local\Temp\opencode\e2e-opfs-profile`. A stale profile makes that precondition chk RED on purpose — never weaken the check instead.
+- Ledger rule: every bug case gets one named repro check that is RED before its fix, ticked only on green evidence (`tasks/bugs.md`, `tasks/bugs-2.md`). Harness/tooling traps live in `tasks/test-deps.md` — read it before touching the runner.
+
+
 Workflow reminders:
 - use skills @using-agent-skills for development flow (prefer spec-driven-development)
 - use skill @control-ui for ui development
