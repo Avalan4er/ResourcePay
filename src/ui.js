@@ -56,7 +56,7 @@ function applyHistory() {
 async function exportCsvFile() {
   const text = buildCsv(state), name = `resourcepay-backup-${new Date().toISOString().slice(0, 10)}.csv`;
   if (window.showSaveFilePicker) { const h = await window.showSaveFilePicker({ suggestedName: name }); const w = await h.createWritable(); await w.write(text); await w.close(); return; }
-  const a = document.createElement('a'); a.download = name; a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.click(); URL.revokeObjectURL(a.href);
+  const a = document.createElement('a'); a.download = name; a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); // revoke is delayed because a same-tick revoke cancels the download; iOS Safari ignores the download attribute (manual-verify note in tasks/test-deps.md)
 }
 
 function applyCharts() {
