@@ -27,7 +27,7 @@ export const snap = () => pg.evaluate(() => ({ // snapshot of every marker famil
   month: document.querySelector('select[data-el=month]')?.value ?? '',
   fields: [...document.querySelectorAll('div.field[data-ref]')].map((r) => ({ ref: r.dataset.ref, name: r.querySelector('b')?.textContent ?? '', prev: r.querySelector('i.prev')?.textContent ?? '', curr: r.querySelector('[data-role=curr]')?.getAttribute('value') ?? '', pv: r.querySelector('[data-role=pv]')?.textContent ?? '' })),
   total: document.querySelector('[data-el=total]')?.textContent ?? '',
-  rows: [...document.querySelectorAll('div.row[data-month]')].map((r) => ({ m: r.dataset.month, t: r.textContent })),
+  rows: [...document.querySelectorAll('div.row[data-month]')].map((r) => ({ m: r.dataset.month, ta: r.getAttribute('data-total') ?? '', t: r.textContent })),
   cards: [...document.querySelectorAll('div.chart[data-res]')].map((c) => ({ res: c.dataset.res, bars: [...c.querySelectorAll('i[data-month]')].map((b) => ({ mo: b.dataset.month, v: b.dataset.v, neg: b.classList.contains('neg'), h: parseInt(b.style.height ?? '0', 10) })) })),
   cfgRows: [...document.querySelectorAll('[data-id]')].map((r) => ({ id: r.dataset.id, active: r.dataset.active, head: r.querySelector('b')?.textContent ?? '', name: r.querySelector('[data-role=name]')?.getAttribute('value') ?? '', price: r.querySelector('[data-role=price]')?.getAttribute('value') ?? '', seed: r.querySelector('[data-role=seed]')?.getAttribute('value') ?? '', hasPrice: r.querySelector('[data-role=price]') !== null })),
 }));
@@ -98,6 +98,7 @@ export const GAP_MIN = 4; // vertical rhythm between stacked blocks (style.css .
 export const CTRL_W_MAX = 120; // settings input width cap; style.css caps at min(100%,5.4rem)≈86px, this is the old "spans half the screen" bug bound — S2
 export const LEFT_MAX = 48; // how far a control may sit from its row's left edge before it reads as stranded; checkbox is var(--tap)=44px — S4
 export const ROW_W_MIN = 300; // meter row must span the phone width (390px viewport minus safe-area padding) — B4
+export const BTN_W_MAX = 200; // card buttons hug their own STR copy; .card is column-flex so children stretch full-bleed (~310px) without align-self — P6
 export const TOAST_Z_MIN = 9; // style.css .banner z-index:9 sits over sticky .tabs z-index:6 — G1/G3
 
 // escape STR copy when a check needs it as a pattern (copy can contain ()?+ literals)
