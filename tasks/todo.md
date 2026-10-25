@@ -48,7 +48,7 @@
 
 # Phase 6 — Evidence-preserving acceptance-harness surgery (`tests/e2e/run.mjs`)
 
-Must land before any restructuring, so later REDs are diagnosable. One runner invocation per pass stays true throughout.
+One runner invocation per pass.
 
 ## Task 6.1 — Never lose the collected evidence on a mid-pass crash
 - Acceptance: each named section is caught; a crash records a FAIL row naming the section + error (e.g. `rowKids` undefined rect at line 76) and the remaining sections still run, so the summary at lines 336–340 always prints. No check weakened, no `chk` skipped.
@@ -58,7 +58,7 @@ Must land before any restructuring, so later REDs are diagnosable. One runner in
 
 ## Task 6.3 — Months come from the live `<select>`, and the 24-month window gets asserted
 - Acceptance: `OPT/M0/M1/OLDEST` read from `select[data-el=month]` options (the `optTexts` read at line 74 already exists) instead of re-deriving `ui.js monthOptions()` at lines 56–57; explicit `chk` that the window length == 24 and ordering is newest-first.
-- LANDED deviation: months stay calendar-derived ONCE in `harness.mjs monthOptions()` (same rule as ui.js) shared by all six modules — deriving them per module from the live select would couple date math to Bills-tab visit order inside one persistent pass. The window itself IS asserted from the DOM: B1 chk (`month-entry.mjs`) requires ≥24 `YYYY-MM` options AND `optTexts[0] === OPT[0]`/last === OLDEST, so a drifting ui.js window goes RED not silent-green.
+- Landed: months are calendar-derived once in `harness.mjs monthOptions()` (same rule as ui.js), shared by the six modules. B1 chk (`month-entry.mjs`) asserts the live `<select>`: ≥24 `YYYY-MM` options, `optTexts[0] === OPT[0]`, last option === OLDEST.
 
 ## Task 6.4 — Kill vacuous-pass class
 - Acceptance: helper `all(list, min, pred)` (non-empty + every) replaces unguarded filtered `.every()` at lines 77/83/142/184/235/256; each check states its expected cardinality per the `.feature` bullets ("one row per ACTIVE meter"). Newly-red checks get a diag before any app change — never weaken the guard (AGENTS ledger rule).
@@ -70,28 +70,28 @@ Must land before any restructuring, so later REDs are diagnosable. One runner in
 - Acceptance: run fails if `document.title` ever starts with `RE:` / `STORAGE-SAVE:` / `STORAGE:` (`ui.js:117/12/119`) or console shows `ResourcePay ... failed:` (the `[c]` logger at line 13 sees it). Today a persist throw still increments `rpSaved`, so G1/S7 round-trip checks pass on a *failed* save.
 
 ### Checkpoint: Phase 6
-- [x] `node tests/e2e/run.mjs` (fresh OPFS profile) → ALL GREEN with the added assertions; ledger rows re-ticked from fresh GREEN evidence only. Evidence 2026-10-25: **ALL 153 acceptance checks GREEN, exit 0, [elapsed] ~12s** (`test-results/e2e-run.txt`); stale-profile run exits **1** with exactly the by-design reds (precondition + B3 + B10 need untouched seeds ⇒ delete profile dir first).
+- [x] `node tests/e2e/run.mjs` (fresh OPFS profile) → ALL GREEN with the added assertions; ledger rows re-ticked from fresh GREEN evidence only. Evidence 2026-10-25: **ALL 153 acceptance checks GREEN, exit 0, [elapsed] ~12s** (`test-results/e2e-run.txt`); stale-profile run exits **1** — FAIL rows: precondition, B3, B10 (needs fresh OPFS profile: delete the profile dir before the run).
 
-# Phase 7 — Structural split + threshold-token dedupe (needs Phase 6 reviewed first)
+# Phase 7 — Structural split + threshold-token dedupe
 
-## Task 7.1 — Split `run.mjs`: harness module + per-feature acceptance sections, single entry point ✅ with deviations
+## Task 7.1 — Split `run.mjs`: harness module + per-feature acceptance modules, single entry point
 - [x] Acceptance: `tests/e2e/run.mjs` stays the one runner invocation (45-line orchestrator listing the scenario order); helpers moved to `tests/e2e/harness.mjs`; checks grouped into six modules next to their `.feature` docs (`month-entry/settings-config/charts-toggle/history-export/persistence-reload/tap-and-toast .mjs`) so `tasks/bugs*.md` grep hits one short PASS row per claim.
-- Deviations recorded: section NAMES keep the original pass-block names (bug-batch keys like `sGroup`, `freshOldestForm`) rather than bullet-per-function — claims stay 1:1 readable but the batch history stays greppable; longest line still ~540–639 chars because in-page probe expressions are single statements (line count per file now 21–115 vs the old monolith 341) — wrapping those lambdas is follow-up work, not claim loss.
+- Shape facts: section names inside modules are the original pass-block/bug-batch keys (`sGroup`, `freshOldestForm`, …); longest lines remain ~540–639 chars (single-statement in-page probes); per-file line counts 21–122 vs old monolith 341.
 
 ## Task 7.2 — Thresholds from app tokens, not duplicated literals ✅
 - [x] `--warn` read through a probe styled with the custom property (`toastColors` compares against the computed token, replacing the hardcoded `rgb(194, 84, 78)` literal), same pattern as the existing `--ok` green probe; tap-target floor single-sourced as `H.TAP`.
-- [x] LANDED 2026-10-25: banner z (`TOAST_Z_MIN`=9), settings input cap (`CTRL_W_MAX`=120), left-hug bound (`LEFT_MAX`=48), meter-row min width (`ROW_W_MIN`=300) and rhythm floor (`GAP_MIN`=4) now live ONCE in `harness.mjs` next to `TAP`, each named with the style.css rule it guards; `month-entry/settings-config/charts-toggle/tap-and-toast` modules read the constants. S4's 2px intra-row rhythm stays inline on purpose (different floor, controls share one column — see comment).
+- [x] LANDED 2026-10-25: banner z (`TOAST_Z_MIN`=9), settings input cap (`CTRL_W_MAX`=120), left-hug bound (`LEFT_MAX`=48), meter-row min width (`ROW_W_MIN`=300) and rhythm floor (`GAP_MIN`=4) now live ONCE in `harness.mjs` next to `TAP`, each named with the style.css rule it guards; `month-entry/settings-config/charts-toggle/tap-and-toast` modules read the constants. S4's intra-row rhythm floor is a separate inline 2px literal (not a shared constant).
 
 ## Task 7.3 — Delete near-duplicate helpers and sequential round-trips ✅
-- [x] Acceptance: `vGaps`/`stackGaps` collapsed to one `gaps(list)`; per-ref loops replaced by batched probes (`rowKidsAll(selectors)`, `visInputs` map inside a single evaluate, geometry read once per selector set) — no per-row await chains left. `[elapsed]` on the split pass: 12.0–12.2s vs 12.9s baseline (green both ways), so the improvement is real not cosmetic-only.
+- [x] Acceptance: `vGaps`/`stackGaps` collapsed to one `gaps(list)`; per-ref loops replaced by batched probes (`rowKidsAll(selectors)`, `visInputs` map inside a single evaluate, geometry read once per selector set) — no per-row await chains left; `[elapsed]`: green runs 12.0–12.2s, pre-split baseline 12.9s.
 
 ## Task 7.4 — `diag()` evidence prints only on failure ✅
 - [x] Acceptance: `diag()` pushes into `DIAGS`; only a RED run flushes them (`report()` prints `[DIAG]` lines when `bad.length` > 0), so a green run's stdout is just PASS rows + summary. The app-error trail chk prints console-failure lines only when they exist.
 
-## Task 7.5 — Fresh OPFS profile becomes setup code, not out-of-band ritual — STILL OPEN
-- [ ] Not implemented: the fresh-profile scenarios still rely on the documented manual ritual (kill `msedge.exe` children + delete `E2E_PROFILE` dir) and the precondition `chk` stays the guard; cross-launch persistence keeps reusing the same profile. Runner-seeded clean dirs are next if this lands.
+## Task 7.5 — Fresh OPFS profile becomes setup code, not out-of-band ritual
+- [ ] Unimplemented: fresh-profile scenarios use the manual ritual (kill `msedge.exe` children + delete `E2E_PROFILE` dir); precondition `chk` guards those runs; cross-launch persistence reuses one profile.
 
-### Checkpoint: Phase 7 — LANDED (only 7.5 seeded-profile setup left open by design); re-run after Task 7.2 thresholds landed: ALL 153 GREEN, exit 0, [elapsed] 12.1s (2026-10-25T09:17 evidence in `test-results/e2e-run.txt`)
-- [x] Single runner invocation (`node tests/e2e/run.mjs`), ALL acceptance checks green, `[elapsed]` not regressed; `tasks/bugs*.md` repro labels resolve to named checks unchanged. Evidence 2026-10-25: **ALL 153 acceptance checks GREEN in Edge phone viewport, exit 0, [elapsed] 12.2s** (was 148 checks / 12.9s before the split), captured in `test-results/e2e-run.txt`; stale-profile run kept 3 by-design reds + exit 1 (precondition/B3/B10 need an untouched profile).
+### Checkpoint: Phase 7 — tasks 7.1–7.4 landed, 7.5 unimplemented; re-run after threshold move: ALL 153 GREEN, exit 0, [elapsed] 12.1s (2026-10-25T09:17 evidence in `test-results/e2e-run.txt`)
+- [x] Single runner invocation (`node tests/e2e/run.mjs`), ALL acceptance checks green, `[elapsed]` not regressed; `tasks/bugs*.md` repro labels resolve to named checks unchanged. Evidence 2026-10-25: **ALL 153 acceptance checks GREEN in Edge phone viewport, exit 0, [elapsed] 12.2s** (was 148 checks / 12.9s before the split), captured in `test-results/e2e-run.txt`; stale-profile run: exit 1, FAIL rows precondition + B3 + B10.
 - [x] Ledger cross-check inline (not a new gate file): every bug id named in `tasks/bugs.md` + `tasks/bugs-2.md` resolves either to a green PASS row in the acceptance evidence or to its unit-layer case in `tests/test.mjs` — 31 ids checked, 0 orphaned by the split.
 
