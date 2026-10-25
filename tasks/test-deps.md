@@ -4,7 +4,7 @@
 
 Run gates:
 1. `node tests/test.mjs` — unit layer (all `src/app.js` exports + coverage manifest gate).
-2. `python -m http.server 8123 --bind 127.0.0.1` then `node tests/e2e/run.mjs` — BDD acceptance layer in a real browser (`tests/e2e/*.feature`).
+2. `python -m http.server 8123 --bind 127.0.0.1` then `node tests/e2e/run.mjs` — BDD acceptance layer in a real browser (`tests/e2e/*.feature`). Since 2026-10-25 the runner is split: `tests/e2e/run.mjs` (45-line orchestrator listing section order) + `harness.mjs` (launch/waits/geometry/thresholds) + six per-feature claim modules (`month-entry/settings-config/charts-toggle/history-export/persistence-reload/tap-and-toast .mjs`) sitting beside their `.feature` docs. One invocation, one persistent browser context; months are calendar-derived ONCE in `harness.mjs monthOptions()` (same rule as ui.js) and the 24-window is asserted from the live `<select>` in B1 — do NOT re-derive dates per module. A fresh-state pass needs the profile dir deleted first + no browser holding it; skipping that makes the precondition chk plus B3/B10 go RED on purpose (seeds/prices must be untouched), exit code 1 — never delete those checks to make a stale-profile run green.
 
 Notes:
 - The harness drives only stable `data-*` markers and asserts buttons via presence + JS-dispatched click; whole-tab re-render makes Playwright's actionability wait time out on stale nodes (that is a harness artifact, not a missing button).
