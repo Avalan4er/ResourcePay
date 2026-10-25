@@ -26,3 +26,5 @@ Workflow reminders:
 - remember of ponytail skill
 - Keep every month's calculations and CSV rows self-contained; don't add dependencies or a build step.
 - Dont write temp files
+- Prefer research api-layers before guesing
+- Never git push with --force flag

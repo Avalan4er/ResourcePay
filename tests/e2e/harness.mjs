@@ -85,7 +85,6 @@ export const all = (list, min, pred) => list.length >= min && list.every(pred);
 export const parseMoney = (t) => parseFloat(String(t).replace('\u2212', '-').replace(/[^0-9.,-]/g, '').replace(',', '.'));
 
 export const tokenColor = async (name) => await pg.evaluate((n) => { const p = document.createElement('p'); p.style.color = 'var(' + n + ')'; document.body.append(p); const v = getComputedStyle(p).color; p.remove(); return v; }, name); // resolve an app CSS custom property to an rgb() string — colours are compared against the app's own tokens, never literals
-export async function shot(path) { await pg.screenshot({ path, fullPage: true }); } // visual evidence for the review pass (test-results/ is gitignored)
 
 export async function rowKidsAll(sels) { // one round-trip per selector batch: rows + their visible controls + every visible descendant, no per-ref await loops
   return await pg.evaluate((list) => { const rect = (e) => { const b = e.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; }; const vis = (q) => [...document.querySelectorAll(q)].filter((e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }).map(rect); return list.map((sel) => { const r0 = document.querySelector(sel); return { r: r0 ? rect(r0) : null, kids: vis(sel + ' input'), all: vis(sel + ' *') }; }); }, sels);

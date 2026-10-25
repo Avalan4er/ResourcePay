@@ -5,36 +5,41 @@
 A personal bills-tracker PWA for one person's flat, used primarily from an iPhone (mobile-first, minimal desktop compatibility), hosted as free static files on GitHub Pages. Tracks monthly bills and their history so the user can see what they spend per month without Excel.
 
 User stories:
-1. **Monthly entry tab** — for each configured meter (gas/electricity/water) show previous reading from history; user enters new *integer* meter value; app shows volume diff and money spent (= diff × ₽/unit price stored in that month's record, editable). Garbage is a fixed monthly ₽ amount entered per month. Saving the month appends a self-contained history record (readings + prices used for that month, all editable afterwards). Unit price can be changed during entry (but by default - use previous) and saved to history.
-2. **History tab** — list of past months; header has one button to save/share full backup as CSV via browser save-file dialog (`showSaveFilePicker`), with `<a download>` fallback where the picker doesn't exist.
-3. **Charts tab** (its own tab) — one bar chart per active resource, x-axis = months; a single toggle in the page header switches **all** charts on that page between volume bars (m³/kWh) and money bars (₽). Value labels above bars. Pure DOM/CSS bars, no chart library.
-4. **Settings tab** — configure meters: rename, unit price, enable/disable (e.g. two gas meters, no water); enabling a meter requires its baseline "latest known reading" (`seed`), which first bills are computed against.
+1. **Monthly entry tab** — for each configured meter (gas/electricity/water) show previous reading from history; user enters new *integer* meter value; app shows volume diff and money spent (= diff × ₽/unit price stored in that month's record, editable). Garbage is a fixed monthly ₽ amount entered per month. Saving the month appends a self-contained history record (readings + prices used for that month, all editable afterwards). Unit price can be changed during entry (by default — previous month's) and saved to history.
+2. **History tab** — list of past months; header has one button to save/share full backup as CSV via browser save-file dialog (`showSaveFilePicker`), with `<a download>` fallback where the picker doesn't exist. Backup filename `resourcepay-backup-YYYY-MM-DD.csv`, prefix string lives in `STR`.
+3. **Charts tab** (its own tab) — one bar chart per active resource, x-axis = months; a single switch in the page header flips **all** charts on that page between volume bars (m³/kWh) and money bars (₽). Value labels above bars. Pure DOM/CSS bars, no chart library.
+4. **Settings tab** — configure meters: rename, unit price, enable/disable (e.g. two gas meters, no water); enabling a meter requires its baseline "latest known reading" (`seed`), which first bills are computed against. Also a **Clear saved months** action (`clearHistory` pure export + DOM glue): wipes `history` only, never config/meters; needs two consecutive taps inside the Settings tab (first tap arms and paints the confirm copy, leaving Settings disarms) so a phone tap can't lose every month by accident.
 
 Data model (JSON state):
-- `config`: list of resources `{id, name, unit, price, active, seed}`; garbage is a fixed-cost resource (`unit` = ₽/month); meter prices default from config but each history record snapshots its own prices. `seed` = latest known meter reading captured when the meter was created/enabled (int|null; required for meters at creation — Settings form makes it non-skippable), used as their baseline `prev`.
-- `history`: entries `{month: "YYYY-MM", rows: [{ref → config id, prev (int|null), curr (int for meters | monthly ₽ for garbage), price}]}`; newest first; a row's `prev` = latest stored reading of that meter in an earlier month regardless of gaps, falling back to its `seed` if no history predates it — so first run and newly configured meters still bill real money (never lifetime-total bug).
+- `config`: list of resources `{id, name, unit, price, active, seed}`; garbage is a fixed-cost resource (`unit` = ₽/month). `seed` = latest known meter reading captured when the meter was created/enabled (int|null; required for meters at creation — Settings form makes it non-skippable), used as its baseline `prev`; self-declared baseline, not forced to today.
+- `history`: entries `{month: "YYYY-MM", rows: [{ref → config id, prev (int|null), curr (int for meters | monthly ₽ for garbage), price}]}`; newest first; a row's `prev` = latest stored reading of that meter in an earlier month regardless of gaps, falling back to its `seed` if no history predates it — so first run and newly configured meters still bill real money (never lifetime-total bug). Household meters are assumed cumulative odometer-style registers; if any meter logs *per-period* volumes instead, that meter's flow needs revisiting.
+- Fixed-cost rows have no price multiplier anywhere: `rowMoneyOf` returns the entered absolute `curr`, neither the Bills row nor its Settings row exposes a `@ price` control, and `fieldRow` omits the prev/baseline line for them so build and refresh paths agree (no "no baseline yet" noise). Historical garbage rows keep their entered amounts.
 
-Persistence requirement: all app data lives persistently in **OPFS** via the standard `navigator.storage.getDirectory()` (File System API), supported by Chrome/Edge/Firefox/Safari iOS 15.2+ — works on iPhone, no service worker needed. File read/write runs in a dedicated Web Worker (`createSyncAccessHandle` is only legal there). OPFS survives reloads/restarts; Safari lets users view/clear it via Settings. No IndexedDB fallback (modern-browser assumption ≥ iOS 15.2 / Chrome 86 / Firefox 111, see research note). CSV exports the full state (config + history) either way.
+Persistence: all app data lives persistently in **OPFS** via standard `navigator.storage.getDirectory()` — supported natively on Chrome ≥86, Edge, Firefox ≥111, Safari iOS ≥15.2 (iPhone works; no service worker, no IndexedDB fallback). File read/write runs in a dedicated Web Worker (`createSyncAccessHandle` is only legal there). OPFS survives reloads/restarts until the user clears browser storage; reinstall-survival is out of scope.
 
-CSV layout (wide table, one line per month — for direct Excel use):
-- Encoding: UTF-8 **BOM**, `;` separator, comma decimals everywhere (2 dp money); integer readings/volumes ungrouped. Chronological oldest→newest rows.
-- Column order is a union of current config meters ∪ every meter ref ever seen in history rows (deleted/disabled ones keep their columns — orphan safety), stable per export sorted by first appearance; header cells are language-symbol based: `<meter name>`, `Δ <meter name>`, `<meter name> ₽` repeated, plus trailing `₽ = total`. Meter names come from config/name-dictionary so RU translation flows through data automatically.
-- Per meter group three columns `(absolute reading at that month ; consumed Δ ; money)`. Garbage fixed-cost resource has only its money column filled (`<garbage name> ₽`) with the other two cells left blank.
-- Money values are always computed from **that row's stored price snapshot**, never current config prices — editing prices or seeds later cannot mutate historical CSV numbers. Total cell = Σ of that row's meter+garbage money (same snapshots). Negative Δ rows export raw negatives (UI warns only, data intact).
-- DECIDED 2026-10-24 (bug H1): NO `#cfg` metadata lines — the backup file is **history-only** (one schema/datestamp marker line, header, month rows). The manual iPhone report flagged settings/seed values in the CSV as unwanted noise, and a fresh-device restore would need an importer that stays out of scope. Earlier draft had proposed `#cfg <id>;<name>;<unit>;active;<price>;<seed>` lines after the rows; that block was dropped, not moved elsewhere.
+CSV layout (wide table, one line per month — direct Excel use):
+- History-only file: one schema/datestamp marker line + header + month rows; **no `#cfg` metadata lines** (settings/seed values read as noise on the iPhone, and a fresh-device restore would need an out-of-scope importer). A cleared state's CSV is marker+header only.
+- Encoding: UTF-8 **BOM**, `;` separator, comma decimals everywhere (2 dp money), integer readings/volumes ungrouped, chronological oldest→newest.
+- Column set = current config meters ∪ every meter ref ever seen in history rows (deleted/disabled keep their columns — orphan safety), stable per export by first appearance; headers are language-symbol based (`<meter name>`, `Δ <meter name>`, `<meter name> ₽`…, trailing `₽ = total`); names come from config so RU translation flows through data.
+- Per meter three columns `(absolute reading ; consumed Δ ; money)`. Garbage fills only its money column, the other two cells blank.
+- Meter money is computed from **that row's stored price snapshot**, never current config — later edits cannot mutate historical numbers; garbage money is its entered `curr` (no multiplier). Total cell = Σ that row's meter+garbage money. Negative Δ rows export raw negatives (UI warns only, data intact).
 
 Interface: all UI strings come from one `STR` dictionary of English values — user hand-translates to Russian later; code must not hardcode display text elsewhere. Currency shown as rubles with exactly 2 decimals after a **comma** (`58,10 ₽`); volumes are integers.
+- Toasts carry an honest kind: `data-kind=ok|err`; success copy paints the app's green `--ok`, error copy keeps `--warn` and stays until acted on; toast is `position:fixed` with safe-area inset above the tab strip (z-index) and `pointer-events:none` so it never covers a tappable control.
+- The volume/money control is one flex row (`.card .swRow`) of two CSS-drawn pills (`.modeSw`): each pill owns its STR label plus a CSS dot (`i.knob`) that turns the app's `--ok` green when selected; an invisible full-track radio (`appearance:none`, transparent) is the tap target and keeps `data-el=modeToggle` a real radio (exactly one checked; tapping the other flips every chart).
+- Viewport pins zoom like an app: `width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,shrink-to-fit=no,viewport-fit=cover`, and every painted control (Bills/Settings inputs, month `<select>`, Settings checkboxes, tab/card buttons, switch tracks) carries `touch-action:none`. Accessibility tradeoff recorded honestly: WCAG 1.4.4 "zoom" is no longer served by browser pinch; low-vision users rely on OS-level accessibility zoom (iOS applies it regardless of this meta) plus the app's own clamp() type scale (tasks/bugs-3.md Z1).
 
 ## Tech stack
 
-- Static files only: HTML + CSS + vanilla ES modules, no framework, no dependencies, no build step, GitHub Pages compatible (same-origin, https).
-- Storage: OPFS (`navigator.storage.getDirectory()` + dedicated Web Worker for sync-handle writes); no external deps, everything same-origin. NO service worker, NO IndexedDB.
+- Static files only: HTML + CSS + vanilla ES modules, no framework, no dependencies, no build step, GitHub Pages compatible (same-origin, https); multi-file hosting, not single self-contained file.
+- Storage: OPFS (`navigator.storage.getDirectory()` + dedicated Web Worker for sync-handle writes); everything same-origin. NO service worker, NO IndexedDB.
+- CSV download button: `showSaveFilePicker` first (Chromium), falls back to `<a download>` blob link (Safari has OPFS but no pickers); on iOS the file lands in Files/downloads app — acceptable backup UX.
 - Tests: Node built-in `node:test`/assert against every exported `src/app.js` function (pure logic + render *descriptors*); acceptance scenarios (BDD-style) executed through the `control-ui` skill harness. Coverage gate inside `tests/test.mjs` fails if any export lacks a unit case.
 
 ## Commands
 
 ```
-Dev server :  python -m http.server 8000   (any static server; OPFS needs a secure context — localhost or https, not file://)
+Dev server :  python -m http.server 8123 --bind 127.0.0.1   (any static server; OPFS needs a secure context — localhost or https, not file://)
 Unit tests :  node tests/test.mjs          (run before declaring done; includes export-coverage gate)
 Browser test:  control-ui skill harness against the dev server
 ```
@@ -45,18 +50,17 @@ Source and tests live in their own directories, not scattered at the repo root:
 
 ```
 src/
-  index.html              → app shell: tabs UI, rendering, STR string dictionary; entry stub redirect at /<repo>/src/… (see note below)
+  index.html              → app shell: tabs UI, rendering, STR string dictionary
   style.css               → mobile-first cute styling
   app.js                  → pure logic + state handling (config defaults, month calc, CSV build) AND render *descriptors* (`describeMonthForm`, `describeHistoryRows`, `describeCharts(mode)` — state → data, DOM-free); testable in Node; imported by index via <script type="module" src="./app.js">
   storage.js              → OPFS: load/save bills.json via navigator.storage.getDirectory() (+ Web Worker createSyncAccessHandle for writes)
   manifest.webmanifest    → PWA manifest (start_url "./", display standalone)
+index.html                → root entry: ~6-line meta-refresh stub redirecting to ./src/index.html (GH Pages bare /<repo>/ needs an entry; all real code stays under src/)
 tests/
   test.mjs                → node:test against ../src/app.js exports + CSV shape builder; carries the export-coverage manifest (every exported fn listed → must have ≥1 case)
   e2e/                    → Gherkin-flavored acceptance features (month-entry.feature, history+csv-export.feature, charts-toggle.feature, settings-config.feature, first-run-seed.feature, persistence-reload.feature…) executed via control-ui against the dev server
 SPEC.md AGENTS.md README.md   → docs at repo root only
 ```
-
-GH Pages note: the bare project link `/<repo>/` needs an entry — either keep a ~6-line meta-refresh `index.html` stub in the root pointing to `./src/index.html`, OR use the GitHub Pages custom-404 trick (`404.json` with `{"permalink": "/src/index.html"}`). Either way all real code stays under `src/`. DECIDED 2026-10-24: meta-refresh stub in root.
 
 ## Code style
 
@@ -75,60 +79,25 @@ STR.garbageTab || fallback…                      // NEVER inline display text 
 
 ## Testing strategy
 
-- **Unit layer (fast, headless, most of the pyramid):** `node tests/test.mjs` must exercise *every* exported function from `src/app.js` incl pure render-descriptors and CSV builder — enforced by a manifest constant: an export not present in its list fails the run. Existing cases to keep green: month calculation (diff, money incl garbage), first-ever reading uses `seed` baseline not zero, newly enabled meter mid-history seeds correctly, price edit of a past month, CSV line building (one row per month: `(absolute;Δ;money)` group per meter in config∪history order + total rubles column; garbage blanks reading/Δ cells; money/total computed from each row's stored prices; negative Δ exported raw), config enable/disable filtering, gap months inherit last-known prev, negative diff (`curr < prev`) returns a warning flag while saving.
-- **Browser/BDD layer (small, ~5% pyramid top):** acceptance features in `tests/e2e/*.feature` written Gherkin-style and executed by the `control-ui` skill harness on the running dev server — each Success criterion 1–7 gets its own scenario: month-entry→saves+instant diff/₽; re-entering same month updates not duplicates; charts toggle volume/money everywhere + one chart/active meter incl garbage bar = monthly cost; settings enable/disable/rename/price visible in entry form & CSV column set (e.g. 2 gas meters, no water); History-tab button → `showSaveFilePicker` on Chromium vs `<a download>` elsewhere, file layout as specced + orphan meter columns kept; rubles render `d,d0` comma, volumes integer everywhere.
+- **Unit layer (fast, headless, most of the pyramid):** `node tests/test.mjs` must exercise *every* exported function from `src/app.js` incl pure render-descriptors and CSV builder — enforced by a manifest constant: an export not present in its list fails the run (same-commit rule: any new app.js export must appear in tests). Cases to keep green: month calculation (diff, money incl garbage), first-ever reading uses `seed` baseline not zero, newly enabled meter mid-history seeds correctly, price edit of a past month, CSV line building (one row per month `(absolute;Δ;money)` group per meter in config∪history order + total ₽ column; garbage blanks reading/Δ cells; money/total from each row's stored prices; negative Δ exported raw), config enable/disable filtering, gap months inherit last-known prev, negative diff (`curr < prev`) returns a warning flag while saving.
+- **Browser/BDD layer (small, ~5% pyramid top):** acceptance features in `tests/e2e/*.feature` written Gherkin-style and executed by the `control-ui` skill harness on the running dev server — each Success criterion gets its own scenario: month-entry→saves+instant diff/₽; re-entering same month updates not duplicates; charts toggle volume/money everywhere + one chart/active meter incl garbage bar = monthly cost; settings enable/disable/rename/price visible in entry form & CSV column set (e.g. 2 gas meters, no water); clear-months two-tap confirm; History-tab button → `showSaveFilePicker` on Chromium vs `<a download>` elsewhere, file layout as specced + orphan meter columns kept; rubles render `d,d0` comma, volumes integer everywhere.
 - **Named integration-only glue (honest exceptions to "every function unit-tested"):** DOM apply fns (`applyDescriptor`), picker trigger flow, OPFS read/write wrappers + Web Worker sync-handle bridge in `storage.js`, event/tab binding in index.html script — covered solely by the BDD features; their internal logic is already delegated to pure units above. A new untested export added to app.js or a new glue fn not tied to any e2e scenario both fail "done" (unit gate or review note).
-- Gate order per AGENTS reminder: unit tests green → then browser flow run before declaring done/commit.
+- Paint/geometry claims read **computed styles** (`appearance`, background, knob colour vs the app's own `--ok` token, pill rects side-by-side) so a future WebKit/Edge paint regression goes RED locally instead of silently; only Safari's real zoom gesture stays manual-verify (tasks/test-deps.md + tasks/bugs-3.md Z1).
+- Gate order: unit tests green → then browser flow run before declaring done/commit.
 
 ## Boundaries
 
 - **Always:** run unit tests green before "done" (coverage manifest included), then execute the `tests/e2e/*.feature` acceptance runs through control-ui; keep everything same-origin static; keep strings only in `STR`; no external deps/CDN/Google Fonts.
-- **Ask first:** adding any dependency, changing storage model (OPFS-native decision settled 2026-10-24 — see research note).
+- **Ask first:** adding any dependency, changing storage model (OPFS-native decision settled).
 - **Never:** commit secrets, edit vendor code (there is none), add a build step, put UI strings outside `STR`.
 
 ## Success criteria
 
-1. Entering readings for a month computes per-meter volume + ₽ instantly and saves a history record that survives a reload, tab switch and PWA relaunch (OPFS persists across sessions until the user clears browser storage; "survives OS-app reinstall" is NOT required — out of scope).
+1. Entering readings for a month computes per-meter volume + ₽ instantly and saves a history record that survives a reload, tab switch and PWA relaunch (OPFS persists across sessions until the user clears browser storage; reinstall-survival out of scope).
 2. Re-entering the same month updates its record rather than duplicating.
-3. Charts tab shows exactly one chart per active resource; header toggle flips every chart between m³/kWh bars and ₽ bars; heights proportional to values; garbage bar = monthly cost.
+3. Charts tab shows exactly one chart per active resource; header switch flips every chart between m³/kWh bars and ₽ bars; heights proportional to values; garbage bar = monthly cost.
 4. Settings enable/disable + rename + price changes reflected in entry form, history CSV row set and charts (e.g. 2 gas meters, no water).
 5. History-tab button triggers `showSaveFilePicker` CSV save in Chromium; on Safari produces the same CSV via anchor download; file follows the wide-table layout above (meter groups `(absolute;Δ;money)` ordered by config∪history, total ₽ column per row, garbage money-only cells) and keeps deleted/disabled meters' historical columns intact.
 6. Rubles render `d,d0` (2 decimals, comma); meter values are integers everywhere.
 7. First-ever or newly configured meter bills from its seed baseline (no lifetime-total bug); gap months inherit the latest known reading; if a saved row has `curr < prev`, a per-row inline warning shows but the save still succeeds (meter replaced mid-history).
-
-## Open questions
-
-(none — all finalized 2026-10-24, see Resolved decisions below)
-
-## Decisions log
-
-- Charts separate from history tab; single volume/money toggle for all charts on the chart page (user correction).
-- Structure: app sources under `src/`, tests under `tests/` (user directive 2026-10-24); GH Pages entry stub in root via meta-refresh redirect (DECIDED); static multi-file hosting (not single self-contained file) — user choice.
-- Multi-file static hosting (index.html + css/js/manifest files in repo), not single self-contained file — user choice.
-- Tests layering refined (idea-refine session 2026-10-24): unit pyramid = every `src/app.js` export incl pure render-descriptor fns enforced by coverage manifest in `tests/test.mjs`; top of pyramid = Gherkin-flavored acceptance features under `tests/e2e/` run through the **control-ui CDP harness** (no external runner deps); DOM/OPFS/picker glue gets a named integration-only list instead of fake-DOM units — user picks confirmed on both engine + layering forks. DECIDED: same-commit rule that any new app.js export must appear in tests (gate fails otherwise).
-- Meter first-run/baseline semantics (idea-refine session 2026-10-24): each meter carries `seed` = latest known reading required at creation; `prev` resolves as last earlier row else seed — covers first run, newly enabled meters and gap months uniformly. DECIDED: user phrased "not current but latest reading" so seed is self-declared baseline, not forced to today.
-- Negative diff (`curr < prev`) shows inline warning but still saves (meter replaced mid-history); no auto-correction of data. DECIDED.
-- Betting assumption (unvalidated against physical devices): household gas/water/electricity registers are cumulative odometer-style values, so seed baseline is the correct zero-point model — if any meter logs *per-period* volumes instead, that meter's flow needs revisiting.
-- CSV switched from one narrow line per meter-row to Excel-ready wide table (one row per month; per-meter `(absolute reading;Δ consumed;money)` groups in config∪history order; total ₽ column) — user directive 2026-10-24 idea-refine session; garbage fixed-cost fills money cell only. Union columns guarantee deleted/disabled meters keep historical cells on re-export. DECIDED.
-
-## Research note & resolved decisions (OPFS + formatting, verified 2026-10-24)
-
-- Standard OPFS `navigator.storage.getDirectory()` has full support per MDN compat: Chrome ≥86, Edge, Firefox ≥111, Safari iOS ≥15.2 (WebKit blog #12257 confirms iOS 15.2+). Sync access handles (`createSyncAccessHandle`) only inside a dedicated Web Worker; that's the cross-browser write path. So OPFS works on iPhone natively — earlier "Chromium-only / IndexedDB fallback" decision is superseded: NO service worker, NO IndexedDB (superseded 2026-10-24).
-- Picker APIs (`showSaveFilePicker`/`showOpenFilePicker`) remain Chromium-only (WebKit ships OPFS only, no pickers) — History-tab CSV button tries picker first, falls back to `<a download>` blob link; on iOS the downloaded file lands in the Files/downloads app, which is acceptable for backup UX.
-- Resolved formatting decisions: CSV = UTF-8 BOM + `;` separator, comma decimals (DECIDED). UI thousands sep = Intl ru-RU narrow nbsp (DECIDED); CSV numbers ungrouped so Excel RU parses them. Backup filename `resourcepay-backup-YYYY-MM-DD.csv`, prefix string lives in `STR` for translation (DECIDED). Reinstall-survival out of scope (DECIDED).
-
-## Decisions log — bug batch 2 (DECIDED 2026-10-25, manual iPhone report)
-
-- Garbage (fixed-cost resource) money is the **absolute monthly ₽ as entered** (`rowMoneyOf` returns `curr`), not curr × a ₽/unit snapshot: it has no unit, its value may differ month to month, and neither the Bills row nor its Settings row exposes a multiplier control (the Settings header drops the `@ price` fragment for fixed rows). Historical garbage rows keep their entered amounts; per-month self-containment unaffected.
-- Settings gained a **Clear saved months** action (`clearHistory` pure export + DOM glue): it wipes `history` only, never config/meters, and requires two consecutive taps inside the Settings tab (first tap arms + paints the confirm copy, leaving Settings disarms) so a phone tap can never lose every month by accident. A cleared state's CSV is marker+header only.
-- Toasts carry an honest kind: `data-kind=ok|err`; success copy paints the app's green `--ok`, error copy keeps `--warn` and stays until acted on; the toast is pinned to the screen (`position:fixed`, safe-area inset, above the tab strip by z-index) with `pointer-events:none` so it never covers a tappable control.
-- The volume/money control is an **iOS-style segmented switch**: one radio knob per mode, each directly under its own STR label, exactly one checked, both painted as pill tracks (tapping the checked knob is a no-op; tapping the other flips every chart). C2's radio semantics keep it testable. Superseded 2026-10-25 by bug batch 3 (Z2): pills alone were not enough — WebKit still painted its native radio and `.card`'s column flex stacked the pair; the switch now owns a row of its own with `-webkit-appearance:none` + a CSS-drawn knob. Superseded 2026-10-25 by bug batch 3 (Z2): pills alone were not enough — WebKit still painted its native radio and `.card`'s column stacked the pair; the switch now owns a row of its own with `-webkit-appearance:none` + CSS-drawn knob.
-- Fixed-cost rows carry **no odometer baseline line** at all (no "no baseline yet" noise): `fieldRow` omits the prev node for fixed rows so build and refresh paths agree.
-- Viewport meta adds `shrink-to-fit=no` (`width=device-width,initial-scale=1,viewport-fit=cover` kept) to stop iOS re-fitting/zooming when a field is tapped; pinch-zoom stays available for accessibility. Remaining iPhone-side auto-zoom behavior is a manual-verify item (documented in tasks/bugs-2.md G2). Superseded 2026-10-25 by bug batch 3 (Z1): the user asked for app-like behavior, so the scale is now pinned both ways and every control sets `touch-action:none` — see that ledger line for the WCAG tradeoff.
-- Unit layer re-pinned: `tests/test.mjs` must import `{ strictEqual as eq } from 'node:assert/strict'` — the previous `{ strict as eq } from 'node:assert'` binding is node's truthiness assertion, which made every numeric comparison vacuous (`eq(1,2)` passed). All prior assertions still hold once they actually compare.
-
-## Decisions log — bug batch 3 (DECIDED 2026-10-25, manual iPhone report)
-
-- The page **pins the zoom scale both ways** (`width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,shrink-to-fit=no,viewport-fit=cover`) AND every painted control (Bills/Settings inputs, month `<select>`, Settings checkboxes, tab/card buttons, switch tracks) carries `touch-action:none` — DECIDED per user request to behave like an app, not a web page: no double-tap/smart-pinch zoom anywhere and no pinch gesture either. Accessibility tradeoff recorded honestly: WCAG 1.4.4 "zoom" is no longer served by the browser pinch; low-vision users rely on OS-level accessibility zoom (which iOS applies regardless of this meta) plus the app's own clamp() type scale — see tasks/bugs-3.md Z1 line.
-- The volume/money control is **one flex row (`.card .swRow`) of two CSS-drawn pills** (`.modeSw`): each pill owns its STR label, a CSS dot (`i.knob`) that turns the app's `--ok` green when selected, and an invisible full-track radio (`appearance:none`, transparent) as the tap target — DECIDED because G4's pills were not enough on iPhone: WebKit painted its native radio control (no `-webkit-appearance:none` reset before) and `.card`'s column flex stacked the pair one below the other. `data-el=modeToggle` stays a real radio so C2's meaning (radio, not button) survives.
-- Z2 geometry/paint claims read **computed styles** (`appearance`, background, knob colour vs the app's own `--ok` token, pill rects side-by-side) so a future WebKit/Edge paint regression goes RED locally instead of silently; only Safari's real zoom gesture stays manual-verify (tasks/test-deps.md line + tasks/bugs-3.md Z1).
+8. Clear saved months needs two consecutive Settings-tab taps and wipes history only; after clearing, config/meters stay intact and the CSV is marker+header only.

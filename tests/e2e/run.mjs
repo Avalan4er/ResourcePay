@@ -31,7 +31,7 @@ await H.section('settings-config: disableKeepsRows', S.disableKeepsRows); // del
 await H.section('history-export: exportBtnPresent', X.exportBtnPresent); // picker CHOOSER itself is manual-only (tasks/test-deps.md)
 await H.section('settings-config: sGroup', S.sGroup); // bug batch B on Settings (S1–S8)
 await H.section('charts-toggle: radioSwitch', C.radioSwitch); // C1/C2 ids from tasks/bugs.md
-await H.section('history-export: breakdownAndShots', X.breakdownAndShots);
+await H.section('history-export: breakdown', X.breakdown);
 await H.section('tap-and-toast: viewportMeta', T.viewportMeta);
 await H.section('tap-and-toast: billsTyping', T.billsTyping); // G5/G6b garbage-row shape + full-size taps
 await H.section('tap-and-toast: noZoom', T.noZoom); // Z1 (tasks/bugs-3.md): app-like page, zoom fully off, zoom gestures fully off
