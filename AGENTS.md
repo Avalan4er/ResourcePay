@@ -14,7 +14,7 @@ node tests/e2e/run.mjs                               # BDD acceptance in a real 
 
 - Unit gate prints `OK unit layer — N/N exports exercised`; it fails if any export lacks a case (`test-results/unit.txt`). Import `{ strictEqual as eq } from 'node:assert/strict'` in new cases — node's `strict as eq` binding is a truthiness assert and lauds wrong values.
 - The acceptance runner serves from `http://127.0.0.1:8123/src/index.html`; it launches the installed browser once (`playwright-core` is a devDependency only, nothing shipped depends on it), prints `PASS`/`FAIL` lines plus `[elapsed]`, and exits non-zero when anything is red. Keep ONE runner invocation per verification pass — one persistent browser context, waits on structural conditions (`tab()` markers, `rpSaved` counter, banner polls), never fixed sleeps.
-- Fresh-state runs (the B3/B10/G-style "no baseline" cases) need the OPFS profile deleted first and no browser holding it: kill `msedge.exe`, then delete `C:\Users\avalan4er\AppData\Local\Temp\opencode\e2e-opfs-profile`. A stale profile makes that precondition chk RED on purpose — never weaken the check instead.
+- Fresh-state runs (the B3/B10/G-style "no baseline" cases) need the OPFS profile deleted first and no browser holding it: kill `msedge.exe`, then delete `test-results\e2e-opfs-profile` (workspace, gitignored). A stale profile makes that precondition chk RED on purpose — never weaken the check instead.
 - Ledger rule: every bug case gets one named repro check that is RED before its fix, ticked only on green evidence (`tasks/bugs.md`, `tasks/bugs-2.md`, `tasks/bugs-3.md`, `tasks/bugs-4.md`). Harness/tooling traps live in `tasks/test-deps.md` - read it before touching the runner.
 
 

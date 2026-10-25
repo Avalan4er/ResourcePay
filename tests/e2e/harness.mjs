@@ -1,10 +1,11 @@
 // Acceptance harness: one persistent browser context per pass + marker-only probes (SPEC Testing strategy).
 // Checks live in the feature modules; this file owns launch/teardown, waits and geometry so features read as BDD claims only.
 import { chromium } from 'playwright-core';
+import { fileURLToPath } from 'node:url'; // keeps PROFILE absolute whatever cwd the runner was started from
 
 const EXE = process.env.E2E_BROWSER || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'; // Chromium-family browser already on this machine; localhost http is a secure context => OPFS allowed like iPhone Safari
 export const URL_ = process.argv[2] || 'http://127.0.0.1:8123/src/index.html';
-export const PROFILE = process.env.E2E_PROFILE || 'C:\\Users\\avalan4er\\AppData\\Local\\Temp\\opencode\\e2e-opfs-profile'; // reusable profile => cross-launch persistence evidence (guardrails: local + disposable)
+export const PROFILE = process.env.E2E_PROFILE || fileURLToPath(new URL('../../test-results/e2e-opfs-profile', import.meta.url)); // profile lives in the workspace's gitignored test-results/ (cwd-independent via import.meta.url); reusable => cross-launch persistence evidence, delete it before a fresh-state run
 
 export const RESULTS = []; export const chk = (l, c) => { RESULTS.push([l, !!c]); }; // exported so feature modules push their own claim rows
 const T0 = Date.now(); // wall clock for the evidence line at the end: with condition-waits instead of fixed beats a green run costs ~Edge launch + real work
@@ -52,7 +53,7 @@ export const bannerPainted = async (what) => await until(what, () => document.qu
 export const toastCleared = async (what) => await until(what, () => document.querySelector('b.banner') === null, null, 5000); // times out on a never-clearing banner => the chk below stays RED (asserted at B9/S6)
 
 export async function click(sel) { // marker-selected button: real click when actionability holds, JS dispatch otherwise (whole-tab re-render makes stale-node waits fail — see ui.js shortcut note)
-  chk('target present: ' + sel, await pg.evaluate((s) => document.querySelector(s) !== null, sel));
+  chk('target present: ' + sel, await until('button painted', (s) => document.querySelector(s) !== null, sel)); // presence as a condition-wait, not an instant probe: ui.js paints #app only after bootLoad awaits, so a cold empty-profile OPFS init used to race the first click after goto and laud a false absence; a truly missing button still goes RED via this chk plus [wait-timeout]
   try { await pg.locator(sel).click({ timeout: 1200 }); } catch (_) { await pg.evaluate((s) => document.querySelector(s)?.click(), sel); }
   await beat(); // the click handler's own DOM work is synchronous; anything async is waited for by a condition below, not a fixed beat
 }
