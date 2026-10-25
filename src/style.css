@@ -25,7 +25,7 @@
 .cfgRow > b,.cfgNew > b,i.tag{grid-column:1/-1} /* headers and info tags own their grid line; label+input pairs auto-flow two-per-line after them (G8/G9 DOM pairing unchanged) */
 .cfgNew button[data-el=addBtn]{justify-self:center}
 
-select{border:1px solid var(--outline);border-radius:var(--shape-s);background:transparent;color:inherit;min-height:var(--tap);touch-action:none} /* manual-report fix #2: month picker wears the same outlined-text-field treatment as every input (--outline 1dp, --shape-s corners, transparent over the sheet, one tap height) — UA keeps its own inner padding/arrow so text never crowds the border */
+select{border:1px solid var(--outline);border-radius:var(--shape-s);background:transparent;color:inherit;min-height:var(--tap);font-size:.9em;font-family:inherit;touch-action:none} /* manual-report fix #2 + round-3: same outlined-text-field treatment as every input (--outline 1dp, --shape-s corners, transparent over the sheet, one tap height) AND the same text metrics — UA default font was ~13.3px Arial, which made the month picker read smaller than its .9em sibling inputs; UA still owns inner padding/arrow */
 option{height:auto;min-height:1px} /* month picker options stay native-painted (B1 reads their visible text) */
 
 /* MD3 list pattern: flat month row + the month's own table fills its section (P7), hairline rules in outline-variant */
@@ -47,7 +47,7 @@ option{height:auto;min-height:1px} /* month picker options stay native-painted (
 .cfgRow input[type=checkbox]{width:var(--tap);height:var(--tap)}
 
 /* MD3 segmented button for the charts mode switch (manual-report request): one pill container around contiguous option cells, 1dp outline with a hairline divider between them; selected cell fills secondary-container. Radio elements stay per-option tap layers (C2/G4 pin that). */
-.card .swRow{display:inline-flex;align-items:stretch;min-height:calc(var(--tap) + var(--space-xs));padding-inline:var(--space-l);border:1px solid var(--outline);border-radius:var(--shape-full);background:transparent;font-size:.9em;touch-action:none;align-self:center} /* align-self so the control hugs its content instead of full-bleeding (.card is column-flex — same P6-class stretch) */
+.card .swRow{display:inline-flex;align-items:stretch;min-height:calc(var(--tap) + var(--space-xs));border:1px solid var(--outline);border-radius:var(--shape-full);background:transparent;font-size:.9em;touch-action:none;align-self:center} /* manual-report fix #1: dropped the 16dp inline gutter — Material segments tile edge-to-edge inside the outline, so the selected cell fills its segment with no chip-like gap to the pill (probe: rowPad 16 left a 16px space each end) */
 .card .modeSw{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--space-xs);min-height:calc(var(--tap) + var(--space-xxs));padding-inline:var(--space-m);border:none;border-radius:0;background:transparent;color:var(--on-surface);font-weight:500;touch-action:none} /* L/R padding min 12dp per segmented-button spec; the cell itself is transparent until selected */
 .card .swRow .modeSw:not(:first-child){border-inline-start:1px solid var(--outline)} /* hairline divider between option cells (segmented group) */
 .card .modeSw[data-on]{background:var(--secondary-container);color:var(--on-secondary-container);border-radius:var(--shape-full)} /* MD3 segmented buttons: the selected ITEM takes the container's fully-rounded shape (Material renders the highlight as a stadium filling the segment, corners matching the pill) — manual-report fix #1 */
