@@ -27,7 +27,10 @@ run(['DEFAULT_CONFIG', 'STR'], () => {
   ok(Object.keys(A.STR).length >= 6, 'STR has UI copy keys');
   ok(['nothingEntered', 'priceMissing', 'lblReading', 'lblPrice', 'lblName', 'lblUnit', 'lblSeedBase',
      'lblActive', 'lblFixed', 'applyChanges', 'saveMonth', 'savedOk', 'lblAmount', 'addMeterTitle',
-     'clearHistory', 'confirmClear'].every(k => k in A.STR),
+     'clearHistory', 'confirmClear',
+     // P4/P7 (tasks/bugs-4.md): the Bills ₽/unit line becomes "12,00 ₽ per m³" and History grows a 4-column table,
+     // so all of that copy must still live in STR (translation lever), placeholders included.
+     'lblPriceOf', 'colMeter', 'colReading', 'colDelta', 'colPrice'].every(k => k in A.STR),
   'every label/copy the DOM glue paints lives in STR (translation lever)');
 });
 
@@ -150,6 +153,9 @@ run(['describeHistoryRows'], () => {
   const p = h[0].parts[0];
   eq(p.name, 'Gas A'); eq(p.unit, 'm\u00b3'); eq(p.delta, 30); eq(p.money, 300);
   eq(p.fixed, false, 'H2 meter part carries its fixed flag (non-fixed)');
+  // P7 (tasks/bugs-4.md): the History month becomes a small per-meter table (name | reading | Δ | ₽/unit),
+  // so the descriptor must carry that month's own stored reading and its effective price — old parts had neither.
+  eq(p.curr, 130, "P7 part.curr = that month's stored reading"); eq(p.price, 10, "P7 part.price = the row's effective per-unit price (self-contained per month)");
   ok(h.every(r => r.month && r.total != undefined && r.parts && r.fmt),
   'H2 month lines expose per-meter breakdown + total for DOM glue');
 });

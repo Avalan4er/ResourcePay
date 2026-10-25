@@ -11,6 +11,7 @@ export const STR = {
   nothingEntered: 'Nothing entered — type at least one reading', priceMissing: 'price not set (enter ₽ per unit in Settings)',
   lblAmount: 'monthly cost ₽', addMeterTitle: 'Add new meter', clearHistory: 'Clear saved months', confirmClear: 'Tap again to erase all saved months',
   lblReading: 'current reading', lblPrice: '₽ per unit', lblName: 'name', lblUnit: 'unit', lblSeedBase: 'latest known reading', lblActive: 'used?', lblFixed: 'fixed monthly cost, no baseline needed',
+  lblPriceOf: '{x} per {unit}', colMeter: 'meter', colReading: 'reading', colDelta: '\u0394 change', colPrice: '\u20bd per unit', // P4 readout + P7 table headings (placeholders stay translatable)
 };
 export const DEFAULT_CONFIG = [
   { id: 'gas', name: 'Gas', unit: 'm³', price: 0, active: true, seed: null },
@@ -109,6 +110,7 @@ export function describeMonthForm(state, month, vals = {}, prices = {}) {
     if (curr == null) return f;
     f.curr = curr;
     const row = { ref: f.ref, fixed: f.fixed, curr, price: prices[f.ref] ?? f.savedPrice ?? state.config.find((c) => c.id === f.ref)?.price ?? 1 };
+    f.priceUsed = row.price; // P4: the DOM paints which ₽/unit figure this month's money actually used
   const d = rowDelta(state, row, month); f.diff = d; f.money = rowMoneyOf(state, row, month); f.warn = d != null && d < 0;
     // honest preview copy: unknown baseline or unset ₽/unit must not read as a real 0 figure (bug cases B3/B10)
     f.hint = f.fixed ? null : f.prev == null ? STR.noSeedPrev : row.price === 0 ? STR.priceMissing : null;
@@ -123,7 +125,7 @@ export function describeHistoryRows(state) { // H2: each line carries a per-mete
       const money = rowMoneyOf(state, r, e.month); total += money;
       const d = rowDelta(state, r, e.month);
       cells.push(r.fixed ? fmtInt(r.curr) : fmtInt(d ?? 0));
-      parts.push({ name: r.name, unit: r.unit, fixed: !!r.fixed, delta: d, money });
+      parts.push({ name: r.name, unit: r.unit, fixed: !!r.fixed, curr: r.curr, price: r.price, delta: d, money }); // P7: a History table also prints that month's own reading + the per-unit figure used (self-contained)
     }
     return { month: e.month, parts, cells, total, fmt: fmtRub(total) };
   }).sort((a, b) => b.month.localeCompare(a.month));
