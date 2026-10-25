@@ -1,38 +1,54 @@
-/* cute mobile-first bills styling — decorative only, zero UI strings here (translation lever = app.js STR dict) */
-:root{--bg:#f7f2ec;--card:#fffdf8;--ink:#39324a;--accent:hsl(268 45% 60%);--warn:#c2544e;--ok:#3d7a5b;--tap:44px}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{-webkit-touch-callout:none;overscroll-x:none}body{-webkit-touch-callout:none;font-family:system-ui,'Segoe UI',sans-serif;background:var(--bg) linear-gradient(160deg,#efe9fb,#f7f2ec 58%,#fdf4ea);color:var(--ink);min-height:100svh;display:flex;flex-direction:column;gap:.8rem;font-size:clamp(15px,calc(10.4px+.4vw),18px);padding-inline:calc(1rem+env(safe-area-inset-left)) calc(1rem+env(safe-area-inset-right));padding-top:.9rem;padding-bottom:calc(.9rem+env(safe-area-inset-bottom))}
-#app{flex:1;display:flex;flex-direction:column;gap:.7rem;overflow-y:auto;align-content:start}
-.tabs{position:sticky;top:.5rem;z-index:6;background:#f7f2fdec;border-radius:0 0 1.1rem 1.1rem;padding:.45rem .8rem;display:flex;gap:.45rem;overflow-x:auto;width:min(100vw,calc(100%+2*env(safe-area-inset-left)+2*env(safe-area-inset-right)))}
-.tabs button{min-width:var(--tap);min-height:var(--tap);border:none;border-radius:99px;padding:.5rem 1.05rem;cursor:pointer;font-weight:600;touch-action:none} /* Z1 (tasks/bugs-3.md): tab strip taps are taps, never a smart-pinch zoom onto the strip */
-.tabs button.on{background:var(--accent);color:#fffdf8;box-shadow:.2rem .3rem .7rem #39324a55}
-.banner{position:fixed;left:.6rem;right:.6rem;bottom:calc(.55rem+env(safe-area-inset-bottom));z-index:9;pointer-events:none;background:var(--warn);color:#fffdf8;border-radius:.8rem;padding:.5rem .9rem;text-align:center;font-size:.88em;box-shadow:.2rem .4rem 1rem #0002}
-.card{background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cpath d='m0 90L45 0l45 0z' fill='%23efe9f596' opacity='.5'/%3E%3C/svg%3E") no-repeat right bottom;background-size:cover;border-radius:1.15rem;box-shadow:.25rem .5rem 1.5rem #39324a2e;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.55rem}
-.card button{border:none;border-radius:99px;padding:.6rem 1.1rem;min-height:var(--tap);background:var(--accent);color:#fffdf8;font-weight:650;cursor:pointer;touch-action:none;align-self:center} /* Z1: Save/Apply/export taps never arm a double-tap zoom either; P6 (tasks/bugs-4.md): .card is column-flex, so without align-self every button stretched full-bleed (~310px) */
-.card .row{display:flex;flex-wrap:wrap;gap:.4rem;padding:.32rem .7rem;border-radius:.65rem;background:#fbf6ea;font-size:.92em}
-.field{display:flex;flex-direction:column;gap:.4rem;padding:.55rem .75rem;border-radius:.85rem;background:transparent;box-shadow:none;margin:.5rem 0;font-size:.9em} /* P5 (tasks/bugs-4.md): flat row on the card — a filled+shadowed panel here read as a card inside a card */
-.cfgRow,.cfgNew{display:flex;flex-direction:column;gap:.4rem;padding:.6rem .75rem;border-radius:.75rem;background:transparent;box-shadow:none;margin:.55rem 0;font-size:.86em} /* P5 same flattening on the Settings card */
-.field,.cfgRow,.cfgNew{border-left:.25rem solid #e3daf4} /* the hairline keeps each row grouped to its controls without painting a panel */
-select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem;touch-action:none} /* Z1: same app-like tap rule for the month picker */option{height:auto;min-height:1px}
-.chart{display:flex;flex-direction:column;gap:.45rem;padding:.5rem .65rem;border-radius:.95rem;background:#f0ebfa;width:min(100%,calc(100% - 1rem));margin:.5rem 0;font-size:.78em} /* P1 (tasks/bugs-4.md): the header line owns the top; bars live in their own row under it (.card is column-flex, so a bar-less flex row beside the h4 was the bug) */
-.chart .bars{display:flex;align-items:end;gap:.32rem;height:7.6rem;padding-bottom:.95rem} /* room below the baseline holds each month's axis caption */
-.chart .bars i{width:min(42px,max(28px,calc((100% - 3rem) / 6)));border-radius:.35rem .35rem 0 0;min-height:3px;background:hsl(var(--h),62%,78%);color:var(--ink);display:flex;align-items:end;justify-content:center;padding-bottom:.15rem;position:relative}
-.chart .bars i.neg{background:#f3bcb6}
-.chart .bars i b.m{position:absolute;top:calc(100% + .2rem);left:-.4rem;font-size:.74em;white-space:nowrap} /* P2: short YY-MM axis caption UNDER the pill, never micro-text inside the paint */
-.chart small.legend{display:block;font-size:.9em;color:hsl(268 30% 46%)} /* P2 legend line: month + value per bar, horizontal and readable */
+/* MD3 component layer — colors/spacing/shape/tap come from tokens.css (linked first). Edge-to-edge flat page: no card panels, no gradients, no elevation shadows around content (design pass 2026-10-25); depth is tonal surface tint only. Zero UI strings here (translation lever = app.js STR dict). */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{-webkit-touch-callout:none;overscroll-x:none}body{-webkit-touch-callout:none;font-family:system-ui,'Segoe UI',sans-serif;background:var(--surface);color:var(--on-surface);min-height:100svh;display:flex;flex-direction:column;gap:var(--space-l);font-size:clamp(15px,calc(10.4px + .4vw),18px);padding-inline:calc(var(--space-l) + env(safe-area-inset-left)) calc(var(--space-l) + env(safe-area-inset-right));padding-top:var(--space-l);padding-bottom:calc(var(--space-l) + env(safe-area-inset-bottom))}
+#app{flex:1;display:flex;flex-direction:column;gap:var(--space-l);overflow-y:auto;align-content:start}
+
+/* MD3 navigation-bar strip (primary tabs): icon-over-label cells, 1dp dividers in outline-variant, 3dp underline active indicator inset 2dp — a tab component, not pill buttons */
+.tabs{position:sticky;top:var(--space-s);z-index:6;background:var(--surface-variant);border-bottom:1px solid var(--outline-variant);padding-inline:calc(var(--space-m) + env(safe-area-inset-left)) calc(var(--space-m) + env(safe-area-inset-right));display:flex;gap:0;overflow-x:auto;width:min(100vw,calc(100% + 2 * env(safe-area-inset-left) + 2 * env(safe-area-inset-right)))}
+.tabs button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:64px;min-width:var(--tap);padding-inline:var(--space-m);border:none;border-radius:0;background:transparent;color:var(--on-surface-variant);font-size:.92em;font-weight:500;cursor:pointer;touch-action:none} /* Z1 (tasks/bugs-3.md): tab-strip taps never arm a smart-pinch zoom onto the strip; 64px = MD3 icon+label tab container */
+.tabs button i.ic{order:-1} /* icon above its label (MD3 stacked tabs); glyph ligature from the vendored font set in tokens.css */
+.tabs button.on{color:var(--primary);font-weight:600} /* active ink = primary role; inactive stays on-surface-variant — no fill, no shadow */
+.tabs button.on::after{content:"";position:absolute;left:2px;right:2px;bottom:1px;height:3px;border-radius:3px 3px 0 0;background:var(--primary)} /* MD3 primary-tab active indicator: 3dp underline inset 2dp each side */
+.tabs button:not(:first-child){border-left:1px solid var(--outline-variant)} /* tab dividers are outline-variant, never the outline role (MD3 anti-pattern rule) */
+
+/* snackbar-style status line: solid tonal fill, no shadow; G1/G3 pinned geometry below */
+.banner{position:fixed;left:var(--space-m);right:var(--space-m);bottom:calc(var(--space-s) + env(safe-area-inset-bottom));z-index:9;pointer-events:none;background:var(--warn);color:var(--on-warn);border-radius:var(--shape-s);padding:var(--space-s) var(--space-l);text-align:center;font-size:.88em}
+.banner[data-kind="ok"]{background:var(--ok);color:var(--on-ok)} /* G1: success copy paints the app's own --ok; error banners keep --warn because they need action */
+
+/* "card" stays as the content group host (class name is e2e-pinned) but paints FLAT — rule 1: no card container around the page, tonal surface + hairlines do the grouping instead */
+.card{display:flex;flex-direction:column;gap:var(--space-l);padding:0;border:none;background:transparent}
+.card button{border:none;border-radius:var(--shape-full);padding:var(--space-m) var(--space-xl);min-height:calc(var(--tap) + var(--space-xxs));background:var(--primary);color:var(--on-primary);font-weight:500;cursor:pointer;touch-action:none;align-self:center} /* Z1: Save/Apply/export taps never arm a double-tap zoom either; P6 (tasks/bugs-4.md): .card is column-flex, so without align-self every button stretched full-bleed (~310px) */
+
+.card .row{display:flex;flex-wrap:wrap;gap:var(--space-xs);padding:var(--space-s) var(--space-m);border:none;border-radius:var(--shape-s);background:transparent;font-size:.92em} /* History month section — flat group, rhythm only */
+.field{display:flex;flex-direction:column;gap:var(--space-xs);padding:.55rem .75rem;border-inline-start:var(--space-xxs) solid var(--outline-variant);border-radius:0;background:transparent;box-shadow:none;margin:var(--space-s) 0;font-size:.9em} /* P5 (tasks/bugs-4.md): flat row on the sheet — a filled+shadowed panel here read as a card inside a card; the hairline keeps each row grouped to its controls without painting a panel */
+.cfgRow,.cfgNew{display:flex;flex-direction:column;gap:var(--space-xs);padding:.6rem .75rem;border-inline-start:var(--space-xxs) solid var(--outline-variant);border-radius:0;background:transparent;box-shadow:none;margin:var(--space-m) 0;font-size:.86em} /* P5 same flattening on the Settings sheet */
+.field,.cfgRow,.cfgNew{border-inline-start:var(--space-xxs) solid var(--outline-variant)} /* the hairline keeps each row grouped to its controls without painting a panel — divider role outline-variant only */
+
+select{border-radius:var(--shape-xs);font-size:.9em;padding:var(--space-xxs) var(--space-s);touch-action:none}option{height:auto;min-height:1px} /* month picker stays native-painted; Z1: same app-like tap rule, no pinch-zoom arming */
+
+/* MD3 list pattern: flat month row + the month's own table fills its section (P7), hairline rules in outline-variant */
+.card .row .mtbl{width:100%;border-collapse:collapse;font-size:.84em}
+.card .row .mtbl th,.card .row .mtbl td{padding:var(--space-xs) var(--space-s);border-bottom:1px solid var(--outline-variant);text-align:right}
+.card .row .mtbl th:first-child,.card .row .mtbl td:first-child{text-align:left}
+
+.chart{display:flex;flex-direction:column;gap:var(--space-s);padding:0;border:none;background:transparent;width:min(100%,calc(100% - var(--space-l)));margin:var(--space-s) 0;font-size:.78em} /* P1 (tasks/bugs-4.md): the header line owns the top; bars live in their own row under it (.card is column-flex, so a bar-less flex row beside the h4 was the bug); flat now — meters/charts sit on the sheet directly, rule 2 */
+.chart .bars{display:flex;align-items:end;gap:var(--space-xxs);height:7.6rem;padding-bottom:.95rem} /* room below the baseline holds each month's axis caption */
+.chart .bars i{width:min(42px,max(28px,calc((100% - 3rem) / 6)));border-radius:var(--shape-s) var(--shape-s) 0 0;min-height:3px;background:hsl(var(--h) 42% 68%);color:var(--on-surface);display:flex;align-items:end;justify-content:center;padding-bottom:.15rem;position:relative} /* data hue (--h set per meter by ui.js) is intentionally within the blue arc — one balanced scheme, bars separated by card header not rainbow */
+.chart .bars i.neg{background:var(--bar-neg)}
+.chart .bars i b.m{position:absolute;top:calc(100% + var(--space-xs));left:-.4rem;font-size:.74em;white-space:nowrap} /* P2: short YY-MM axis caption UNDER the pill, never micro-text inside the paint */
+.chart small.legend{display:block;font-size:.9em;color:var(--on-surface-variant)} /* P2 legend line: month + value per bar, horizontal and readable */
+
 @supports not (overscroll-x:none){body{padding:1rem}}
 
-/* B2/B4/B5/C1/S2/S4/S5: the earlier file dropped whole declarations because of missing semicolons (cards collapsed) and had no caps on input widths (controls spanned 2/3 of the screen). Every control is now capped and stacked with its label in a column, so nothing overlaps or sits stranded. */
-[hidden]{display:none}i.lbl{display:block;font-size:.78em;color:hsl(268 30% 46%)}i.tag{font-size:.78em;opacity:.72}
-.field input,.cfgRow input,.cfgNew input{width:min(100%,5.4rem);min-height:var(--tap);border:.12rem solid #39324a66;border-radius:.5rem;padding:.25rem .45rem;background:#fffdf8;accent-color:var(--accent);touch-action:none} /* Z1 (tasks/bugs-3.md): a tap here is never a double-tap-to-zoom gesture; meta caps alone do not stop iOS smart-pinch, this does (pinch/pan stay live elsewhere) */
+[hidden]{display:none}i.lbl{display:block;font-size:.78em;color:var(--on-surface-variant)}i.tag{font-size:.78em;opacity:.72}
+.field input,.cfgRow input,.cfgNew input{width:min(100%,5.4rem);min-height:var(--tap);border:1px solid var(--outline);border-radius:var(--shape-s);background:transparent;accent-color:var(--primary);touch-action:none} /* Z1 (tasks/bugs-3.md): a tap here is never a double-tap-to-zoom gesture; meta caps alone do not stop iOS smart-pinch, this does (pinch/pan stay live elsewhere); S2 keeps inputs capped instead of spanning half the screen */
 .cfgRow input[type=checkbox]{width:var(--tap);height:var(--tap)}
-.card .swRow{display:flex;flex-wrap:wrap;gap:.45rem;font-size:.9em} /* Z2 (tasks/bugs-3.md): .card stacks its children in a column, so the two mode tracks need their OWN flex row — that is the whole "one below the other" bug */
-.card .modeSw{position:relative;display:inline-flex;align-items:center;min-height:calc(var(--tap) + .4rem);padding:.45rem 1.1rem;border-radius:99px;background:#f2edf9;border:.12rem solid #39324a66;font-weight:600;touch-action:none}
-.card .modeSw i.lbl{font-size:1em;color:var(--ink)} /* the track's own copy is its label, not a caption above it */
-.card .modeSw i.knob{width:1.15rem;height:1.15rem;border-radius:99px;background:#39324a3d;order:-1;margin-right:.45rem} /* dot first, then its mode name = an iOS segmented switch */
+
+.card .swRow{display:flex;flex-wrap:wrap;gap:var(--space-s);font-size:.9em} /* Z2 (tasks/bugs-3.md): .card stacks its children in a column, so the two mode tracks need their OWN flex row — that is the whole "one below the other" bug */
+.card .modeSw{position:relative;display:inline-flex;align-items:center;min-height:calc(var(--tap) + var(--space-s));padding:var(--space-xs) var(--space-xl);border:1px solid var(--outline);border-radius:var(--shape-full);background:var(--surface-variant);font-weight:500;touch-action:none} /* MD3 segmented-control roles on the pill track (kept pinned by Z2/G4 claims): 1dp outline border, fully-rounded; selected segment fills secondary-container via data-on set by ui.js when its radio is checked */
+.card .modeSw[data-on]{background:var(--secondary-container);color:var(--on-secondary-container)} /* MD3 segmented buttons: the selected option carries the container fill — data attr because CSS has no parent selector (radio itself stays transparent) */
+.card .modeSw i.lbl{font-size:1em;color:inherit} /* the track's own copy is its label, not a caption above it */
+.card .modeSw i.knob{width:1.15rem;height:1.15rem;border-radius:var(--shape-full);background:var(--on-surface-variant);order:-1;margin-right:var(--space-xs)} /* dot first, then icon, then its mode name = an iOS segmented switch (Z2c needs this neutral fill OPAQUE, never transparent) */
 .card .modeSw input[type=radio]{-webkit-appearance:none;appearance:none;background:transparent;border:0;position:absolute;inset:0;width:100%;height:100%;touch-action:none} /* Z2 root cause: WebKit kept painting its native radio control (no appearance reset before) — with appearance none the invisible radio is ONLY the track's tap target and every pixel comes from our CSS */
-.card .modeSw input:checked ~ i.knob{background:var(--ok)} /* lit state readable without tapping: only the selected mode's dot is green */
-.banner[data-kind="ok"]{background:var(--ok)} /* G1: success copy paints green; error banners keep --warn because they need action */
-.field i.prev,.field p.pv{font-size:.86em} /* P3: the Δ/calc line is a plain block; an HTML <s> element would paint strike-through across the figures */
-.card .row .mtbl{width:100%;border-collapse:collapse;font-size:.84em} /* P7: the per-meter table fills its section, not one run-on sentence */
-.card .row .mtbl th,.card .row .mtbl td{padding:.25rem .4rem;border-bottom:.06rem solid #ded7ee;text-align:right}
-.card .row .mtbl th:first-child,.card .row .mtbl td:first-child{text-align:left}
+.card .modeSw input:checked ~ i.knob{background:var(--ok)} /* lit state readable without tapping: only the selected mode's dot is green (token read by harness vs banner --ok) */
+
+.field i.prev,.field p.pv{font-size:.86em} /* P3: the Δ/calc line is a plain block; an HTML <s> element IS strikethrough, which painted a line through the figures */

@@ -1,0 +1,15 @@
+/* MD3 design-token layer — verified 2026-10-25 from m3.material.io spec pages (sources + pinned e2e contracts: docs/ideas/md3-kit-cheatsheet.md). One balanced bluish light scheme, solid fills only, no gradients. Component selectors live in style.css. */
+@font-face{font-family:'Material Icons';font-style:normal;font-weight:400;src:url(./material-icons.woff2) format('woff2')} /* vendored once (fonts.gstatic v145 byte-identical file); SPEC bans CDN fonts + build steps, so it lives beside this sheet */
+
+:root{
+--surface:#f3f6fb;--surface-variant:#e8edf6;--on-surface:#1a1c20;--on-surface-variant:#454b55; /* tonal surfaces are the depth cue (MD3), not shadows */
+--primary:#2f5fc4;--on-primary:#f2f6ff;--secondary-container:#d7e2f4;--on-secondary-container:#16273a;
+--outline:#757c88;--outline-variant:#c5cbd8; /* outline = important boundaries (field borders); outline-variant = dividers (MD3 anti-pattern rule) */
+--ok:#1e6b4c;--on-ok:#f4faf7;--warn:#bf3f35;--on-warn:#fdf7f5; /* harness tokenColor() reads --ok/--warn by name — keep those tokens */
+--bar-neg:#efc2bc; /* negative-Δ bar paint (error-container tone) */
+--tap:44px; /* iOS comfortable-tap design target; acceptance floor TAP=40 sits under it (harness keeps them in sync, tasks/test-deps.md) */
+--space-xxs:2px;--space-xs:4px;--space-s:8px;--space-m:12px;--space-l:16px;--space-xl:24px;--space-xxl:32px; /* 8dp base scale (md.sys.measurement.space100=8); nested steps 2/4 kept as xxs/xs */
+--shape-xs:4px;--shape-s:8px;--shape-full:9999px; /* shape tokens — fully rounded is a token value, not 50% of size (Expressive refresh) */
+}
+
+i.ic{font-family:'Material Icons';font-weight:400;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:'liga' on;font-feature-settings:'liga' on} /* MD3 icon slot = 24dp; ligature names are decorative pictographs, not STR UI copy; natural glyph box so a tofu fallback reads wider than the slot and an e2e probe can see it */
