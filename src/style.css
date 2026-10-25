@@ -3,15 +3,15 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{-webkit-touch-callout:none;overscroll-x:none}body{-webkit-touch-callout:none;font-family:system-ui,'Segoe UI',sans-serif;background:var(--bg) linear-gradient(160deg,#efe9fb,#f7f2ec 58%,#fdf4ea);color:var(--ink);min-height:100svh;display:flex;flex-direction:column;gap:.8rem;font-size:clamp(15px,calc(10.4px+.4vw),18px);padding-inline:calc(1rem+env(safe-area-inset-left)) calc(1rem+env(safe-area-inset-right));padding-top:.9rem;padding-bottom:calc(.9rem+env(safe-area-inset-bottom))}
 #app{flex:1;display:flex;flex-direction:column;gap:.7rem;overflow-y:auto;align-content:start}
 .tabs{position:sticky;top:.5rem;z-index:6;background:#f7f2fdec;border-radius:0 0 1.1rem 1.1rem;padding:.45rem .8rem;display:flex;gap:.45rem;overflow-x:auto;width:min(100vw,calc(100%+2*env(safe-area-inset-left)+2*env(safe-area-inset-right)))}
-.tabs button{min-width:var(--tap);min-height:var(--tap);border:none;border-radius:99px;padding:.5rem 1.05rem;cursor:pointer;font-weight:600}
+.tabs button{min-width:var(--tap);min-height:var(--tap);border:none;border-radius:99px;padding:.5rem 1.05rem;cursor:pointer;font-weight:600;touch-action:none} /* Z1 (tasks/bugs-3.md): tab strip taps are taps, never a smart-pinch zoom onto the strip */
 .tabs button.on{background:var(--accent);color:#fffdf8;box-shadow:.2rem .3rem .7rem #39324a55}
 .banner{position:fixed;left:.6rem;right:.6rem;bottom:calc(.55rem+env(safe-area-inset-bottom));z-index:9;pointer-events:none;background:var(--warn);color:#fffdf8;border-radius:.8rem;padding:.5rem .9rem;text-align:center;font-size:.88em;box-shadow:.2rem .4rem 1rem #0002}
 .card{background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cpath d='m0 90L45 0l45 0z' fill='%23efe9f596' opacity='.5'/%3E%3C/svg%3E") no-repeat right bottom;background-size:cover;border-radius:1.15rem;box-shadow:.25rem .5rem 1.5rem #39324a2e;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.55rem}
-.card button{border:none;border-radius:99px;padding:.6rem 1.1rem;min-height:var(--tap);background:var(--accent);color:#fffdf8;font-weight:650;cursor:pointer}
+.card button{border:none;border-radius:99px;padding:.6rem 1.1rem;min-height:var(--tap);background:var(--accent);color:#fffdf8;font-weight:650;cursor:pointer;touch-action:none} /* Z1: Save/Apply/export taps never arm a double-tap zoom either */
 .card .row{display:flex;flex-wrap:wrap;gap:.4rem;padding:.32rem .7rem;border-radius:.65rem;background:#fbf6ea;font-size:.92em}
 .field{display:flex;flex-direction:column;gap:.4rem;padding:.55rem .75rem;border-radius:.85rem;background:var(--card);box-shadow:.1rem .2rem .9rem #39324a1d;margin:.5rem 0;font-size:.9em}
 .cfgRow,.cfgNew{display:flex;flex-direction:column;gap:.4rem;padding:.6rem .75rem;border-radius:.75rem;background:#f2edf9;font-size:.86em;margin:.55rem 0}
-select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem}option{height:auto;min-height:1px}
+select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem;touch-action:none} /* Z1: same app-like tap rule for the month picker */option{height:auto;min-height:1px}
 .chart{display:flex;align-items:end;gap:.32rem;height:9rem;padding:.5rem .65rem;border-radius:.95rem;background:#f0ebfa;width:min(100%,calc(100% - 1rem));margin:.5rem 0;font-size:.78em}
 .chart i{width:min(42px,max(28px,calc((100% - 3rem) / 6)));border-radius:.35rem .35rem 0 0;min-height:3px;background:hsl(var(--h),62%,78%);color:var(--ink);display:flex;align-items:end;justify-content:center;padding-bottom:.15rem}
 .chart i.neg{background:#f3bcb6}
@@ -20,8 +20,13 @@ select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem}option{height:a
 
 /* B2/B4/B5/C1/S2/S4/S5: the earlier file dropped whole declarations because of missing semicolons (cards collapsed) and had no caps on input widths (controls spanned 2/3 of the screen). Every control is now capped and stacked with its label in a column, so nothing overlaps or sits stranded. */
 [hidden]{display:none}i.lbl{display:block;font-size:.78em;color:hsl(268 30% 46%)}i.tag{font-size:.78em;opacity:.72}
-.field input,.cfgRow input,.cfgNew input{width:min(100%,5.4rem);min-height:var(--tap);border:.12rem solid #39324a66;border-radius:.5rem;padding:.25rem .45rem;background:#fffdf8;accent-color:var(--accent)}
+.field input,.cfgRow input,.cfgNew input{width:min(100%,5.4rem);min-height:var(--tap);border:.12rem solid #39324a66;border-radius:.5rem;padding:.25rem .45rem;background:#fffdf8;accent-color:var(--accent);touch-action:none} /* Z1 (tasks/bugs-3.md): a tap here is never a double-tap-to-zoom gesture; meta caps alone do not stop iOS smart-pinch, this does (pinch/pan stay live elsewhere) */
 .cfgRow input[type=checkbox]{width:var(--tap);height:var(--tap)}
-.card input[type=radio][data-for="chartVolume"],.card input[type=radio][data-for="chartMoney"]{width:min(100%,5rem);min-height:var(--tap);border:.14rem solid #39324a66;border-radius:99px;background:#f2edf9;accent-color:var(--ok)} /* G4: each mode knob gets its own pill track directly under its label, so both states of the switch are visible (iOS segmented control), not one bare dot */
+.card .swRow{display:flex;flex-wrap:wrap;gap:.45rem;font-size:.9em} /* Z2 (tasks/bugs-3.md): .card stacks its children in a column, so the two mode tracks need their OWN flex row — that is the whole "one below the other" bug */
+.card .modeSw{position:relative;display:inline-flex;align-items:center;min-height:calc(var(--tap) + .4rem);padding:.45rem 1.1rem;border-radius:99px;background:#f2edf9;border:.12rem solid #39324a66;font-weight:600;touch-action:none}
+.card .modeSw i.lbl{font-size:1em;color:var(--ink)} /* the track's own copy is its label, not a caption above it */
+.card .modeSw i.knob{width:1.15rem;height:1.15rem;border-radius:99px;background:#39324a3d;order:-1;margin-right:.45rem} /* dot first, then its mode name = an iOS segmented switch */
+.card .modeSw input[type=radio]{-webkit-appearance:none;appearance:none;background:transparent;border:0;position:absolute;inset:0;width:100%;height:100%;touch-action:none} /* Z2 root cause: WebKit kept painting its native radio control (no appearance reset before) — with appearance none the invisible radio is ONLY the track's tap target and every pixel comes from our CSS */
+.card .modeSw input:checked ~ i.knob{background:var(--ok)} /* lit state readable without tapping: only the selected mode's dot is green */
 .banner[data-kind="ok"]{background:var(--ok)} /* G1: success copy paints green; error banners keep --warn because they need action */
 .field i.prev,.field s.pv{font-size:.86em}

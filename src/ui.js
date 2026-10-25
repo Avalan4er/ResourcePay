@@ -71,9 +71,10 @@ async function exportCsvFile() {
 }
 
 function applyCharts() {
-  const box = el('div', 'card'); // C2/G4 host card carries the mode switch and its labels
-  const knob = (label, mark, isMoney) => { const l = el('i', 'lbl'); l.dataset.for = mark; l.textContent = label; const k = document.createElement('input'); k.type = 'radio'; k.dataset.for = mark; k.checked = (mode === 'money') === isMoney; if (isMoney) k.dataset.el = 'modeToggle'; k.onclick = () => { const want = isMoney ? 'money' : 'volume'; if (mode === want) return; mode = want; renderAll(); }; box.append(l, k); return k; }; // G4: one radio knob per mode, each directly under its own STR label ⇒ an iOS-style segmented switch with BOTH states visible
-  knob(STR.chartVolume, 'chartVolume', false); knob(STR.chartMoney, 'chartMoney', true);
+  const box = el('div', 'card'); // C2/G4/Z2 host card carries the mode switch row and every chart card
+  const swRow = el('div', 'swRow'); // Z2: .card paints its children as a column, so the two tracks need their own ROW — stacked label/knob pairs were the reported bug
+  const knob = (label, mark, isMoney) => { const t = el('span', 'modeSw'); t.dataset.mode = mark; const l = el('i', 'lbl'); l.dataset.for = mark; l.textContent = label; const k = document.createElement('input'); k.type = 'radio'; k.dataset.for = mark; k.checked = (mode === 'money') === isMoney; if (isMoney) k.dataset.el = 'modeToggle'; k.onclick = () => { const want = isMoney ? 'money' : 'volume'; if (mode === want) return; mode = want; renderAll(); }; t.append(l, k, el('i', 'knob')); swRow.append(t); return k; }; // G4: one track per mode = its own STR label + an invisible radio covering the whole pill (style.css draws the dot, so no native control paints) ⇒ a switch where BOTH states and which is lit are visible
+  knob(STR.chartVolume, 'chartVolume', false); knob(STR.chartMoney, 'chartMoney', true); box.append(swRow);
   describeCharts(state, mode).forEach((g, i) => { const card = el('div', 'chart'); card.dataset.res = g.id; card.style.setProperty('--h', String(i * 47)); card.append(el('h4', '', g.name + (mode === 'volume' && !g.fixed ? ` · ${g.unit}` : '')));
     if (!g.empty) g.bars.forEach(b => { const bar = document.createElement('i'); bar.dataset.month = b.month; const label = mode === 'money' ? fmtRub(b.v) : fmtInt(b.v); bar.dataset.v = label; bar.style.height = Math.max(2, g.pctOf ? Math.round(Math.abs(b.v) / g.pctOf * 100) : 2) + '%'; if (b.v < 0) bar.classList.add('neg'); bar.append(el('span', '', `${label} ${b.month}`)); card.append(bar); });
     box.append(card); }); return box;
