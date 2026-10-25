@@ -23,7 +23,7 @@ export async function radioSwitch() { // C2 ids from tasks/bugs.md: the volume/m
   await H.tab('tabCharts'); await H.frames();
   const tgl = await H.ev(() => { const t = document.querySelector('[data-el=modeToggle]'); return (t?.tagName ?? '') + '/' + (t?.type ?? ''); });
   H.chk('C2 volume/money control is a radio element, not a plain button', tgl.startsWith('INPUT/') && tgl.endsWith('radio'));
-  const modeLbls = await H.ev(() => { const t = document.querySelector('[data-el=modeToggle]'); if (!t) return []; const card = t.closest('div.card') ?? t.parentElement; return [...card.querySelectorAll(':scope > i.lbl')].map((e) => e.textContent); }); // labels sharing the toggle's card: C2 evidence
+  const modeLbls = await H.ev(() => { const t = document.querySelector('[data-el=modeToggle]'); if (!t) return []; const card = t.closest('div.card') ?? t.parentElement; return [...card.querySelectorAll('.modeSw i.lbl')].map((e) => e.textContent); }); // C2 evidence reworded for Z2's DOM: each label sits INSIDE its own pill, not as a direct child of the card
   H.chk('C2 both mode labels sit next to the radio so its meaning is visible', H.all(modeLbls, 2, (t) => String(t).trim() !== ''));
   await H.frames(); const cGeo = await H.rects('div.chart[data-res]'); // C1: chart boxes need painted frames before measuring
   H.chk('C1 chart cards keep vertical margin (>=4px stacked gaps)', cGeo.length >= 2 && H.gaps(cGeo).every((g) => g >= H.GAP_MIN));

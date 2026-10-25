@@ -34,9 +34,11 @@ await H.section('charts-toggle: radioSwitch', C.radioSwitch); // C1/C2 ids from 
 await H.section('history-export: breakdownAndShots', X.breakdownAndShots);
 await H.section('tap-and-toast: viewportMeta', T.viewportMeta);
 await H.section('tap-and-toast: billsTyping', T.billsTyping); // G5/G6b garbage-row shape + full-size taps
+await H.section('tap-and-toast: noZoom', T.noZoom); // Z1 (tasks/bugs-3.md): app-like page, zoom fully off, zoom gestures fully off
 await H.section('tap-and-toast: toastColors', T.toastColors); // G1 kinds/colours read via the app's CSS custom properties
 await H.section('tap-and-toast: toastOnScrolledPage', T.toastOnScrolledPage);
 await H.section('tap-and-toast: iosModeSwitch', T.iosModeSwitch);
+await H.section('tap-and-toast: switchRow', T.switchRow); // Z4 (tasks/bugs-3.md): one-row CSS pills + lit-state readable, no native radio paint
 await H.section('settings-config: settingsCardG', S.settingsCardG); // G8/G9 card layout on the Settings tab
 await H.section('settings-config: wipeSavedMonths', S.wipeSavedMonths); // destructive ⇒ two taps; months survive/disarm rules
 await H.errorTrailChk(); // ui.js parks glue throws in document.title + console — those trails must not be green-and-lost (rpSaved alone would launder them)
