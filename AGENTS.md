@@ -28,3 +28,4 @@ Workflow reminders:
 - Dont write temp files
 - Prefer research api-layers before guesing
 - Never git push with --force flag
+- Never take screenshots

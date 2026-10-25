@@ -50,10 +50,13 @@ Source and tests live in their own directories, not scattered at the repo root:
 
 ```
 src/
-  index.html              → app shell: tabs UI, rendering, STR string dictionary
-  style.css               → mobile-first cute styling
-  app.js                  → pure logic + state handling (config defaults, month calc, CSV build) AND render *descriptors* (`describeMonthForm`, `describeHistoryRows`, `describeCharts(mode)` — state → data, DOM-free); testable in Node; imported by index via <script type="module" src="./app.js">
+  index.html              → app shell only: viewport/theme meta, stylesheet links (tokens before components), module scripts
+  tokens.css              → MD3 design-token layer: vendored Material Icons @font-face (src/material-icons.woff2) + one balanced bluish scheme as md.sys-style color roles (--surface/--primary/--ok/--warn…) + 8dp spacing scale, shape tokens, --tap — zero component selectors
+  style.css               → MD3 component layer on those tokens: flat edge-to-edge sheets (no card containers/gradients/shadows), navigation-bar tabs strip with underline active indicator, outlined fields, segmented pills — no UI strings
+  ui.js                   → integration-only DOM/picker/event glue (tabs render, ICON ligature spans, mode switch): imports app.js descriptors + storage.js; the STR dictionary lives in app.js
+  app.js                  → pure logic + state handling (config defaults, month calc, CSV build) AND render *descriptors* (`describeMonthForm`, `describeHistoryRows`, `describeCharts(mode)` — state → data, DOM-free); testable in Node; imported by ui via <script type="module" src="./app.js">
   storage.js              → OPFS: load/save bills.json via navigator.storage.getDirectory() (+ Web Worker createSyncAccessHandle for writes)
+  material-icons.woff2    → vendored Google Material Icons font (v145), self-hosted — SPEC bans CDN fonts and build steps
   manifest.webmanifest    → PWA manifest (start_url "./", display standalone)
 index.html                → root entry: ~6-line meta-refresh stub redirecting to ./src/index.html (GH Pages bare /<repo>/ needs an entry; all real code stays under src/)
 tests/
