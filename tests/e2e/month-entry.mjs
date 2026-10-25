@@ -54,8 +54,8 @@ export async function enterPreviousMonth() { // month-entry.feature: prev line +
   for (const [ref, v] of [['gas', 1060], ['electricity', 5300], ['water', 740], ['trash', 250]]) await H.setVal('[data-ref=' + ref + '] [data-role=curr]', v);
   await H.beat();
   let s = await H.snap();
-  H.chk('entry: prev line shows the odometer baseline per meter (not zero)', H.all(s.fields.filter((f) => f.ref !== 'trash'), 3, (f) => /Previous reading: /.test(f.prev)));
-  H.chk('entry: \u0394 + ruble preview updates as soon as a reading is typed', H.all(s.fields.filter((f) => f.curr && !/\/month/.test(f.name)), 3, (f) => (f.pv.includes('\u20bd') || new RegExp(AP.priceMissing + '|' + AP.noSeedPrev).test(f.pv)) && f.pv.length > 4)); // fixed-cost rows (garbage) intentionally have no \u20bd line; an unset price reads as words instead
+  H.chk('entry: prev line shows the odometer baseline per meter (not zero)', H.all(s.fields.filter((f) => f.ref !== 'trash'), 3, (f) => String(f.prev ?? '').includes(AP.prevLabel))); // re-pin for RU translation round: copy comes from AP.prevLabel, never an English literal
+  H.chk('entry: \u0394 + ruble preview updates as soon as a reading is typed', H.all(s.fields.filter((f) => f.curr && !/\/month/.test(f.name)), 3, (f) => (f.pv.includes('\u20bd') || f.pv.includes(AP.priceMissing) || f.pv.includes(AP.noSeedPrev)) && f.pv.length > 4)); // re-pin for RU copy: substring reads replace new RegExp — translated strings carry literal ( ) that would break an unescaped pattern
   H.chk('entry: month total money line rendered', s.total.includes('\u20bd'));
   const priceInputs = await H.ev(() => document.querySelectorAll('div.field[data-ref] [data-role=price]').length);
   const meterFields = s.fields.filter((f) => !/\/month/.test(f.name)); // G6: a fixed-cost row has no ₽/unit multiplier at all, so only meters carry one

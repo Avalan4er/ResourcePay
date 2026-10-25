@@ -1,23 +1,23 @@
 // ResourcePay pure logic module — DOM-free descriptors/calcs only (browser glue lives in index.html, integration-tested).
 export const STR = {
-  tabBills: 'Bills', tabHistory: 'History', tabCharts: 'Charts', tabSettings: 'Settings',
-  enterReading: 'Current meter reading', prevLabel: 'Previous reading', monthTotal: 'Month total ₽',
-  exportCsv: 'Save history as CSV', chartVolume: 'By volume', chartMoney: 'By money',
-  negativeDiff: 'reading decreased vs previous — new meter?', noSeedPrev: 'no baseline yet (set seed in Settings)',
-  seedRequired: 'Enter the latest known reading of this meter', badNumber: 'Reading must be a whole number',
-  csvDate: 'date', csvTotal: 'total ₽', ruble: '₽', deltaMark: 'Δ ',
-  noStorage: 'this browser cannot persist data (secure context needed) — history stays in-memory', saved: 'saved ✓',
-  saveMonth: 'Save this month', applyChanges: 'Apply changes', savedOk: 'Saved ✓',
-  nothingEntered: 'Nothing entered — type at least one reading', priceMissing: 'price not set (enter ₽ per unit in Settings)',
-  lblAmount: 'monthly cost ₽', addMeterTitle: 'Add new meter', clearHistory: 'Clear saved months', confirmClear: 'Tap again to erase all saved months',
-  lblReading: 'current reading', lblPrice: '₽ per unit', lblName: 'name', lblUnit: 'unit', lblSeedBase: 'latest known reading', lblActive: 'used?', lblFixed: 'fixed monthly cost, no baseline needed',
-  lblPriceOf: '{x} per {unit}', colMeter: 'meter', colReading: 'reading', colDelta: '\u0394 change', colPrice: '\u20bd per unit', colMoney: '\u20bd spent', // P4 readout + P7 table headings (placeholders stay translatable); colMoney added with the History money-per-meter column (P7-re-pin)
+  tabBills: 'Показания', tabHistory: 'История', tabCharts: 'Графики', tabSettings: 'Настройки',
+  enterReading: 'Текущие показания счетчиков', prevLabel: 'Предыдущие показания', monthTotal: 'Итого за месяц (₽)',
+  exportCsv: 'Сохранить в CSV', chartVolume: 'Объем', chartMoney: 'Оплачено',
+  negativeDiff: 'показания счетчика ниже чем предыдущие — новый счетчик?', noSeedPrev: 'не заданы начальные показания счетчика (см. настройки)',
+  seedRequired: 'Введите последние показания этого счетчика', badNumber: 'Показания счетчика должны быть целым числом',
+  csvDate: 'дата', csvTotal: 'итого ₽', ruble: '₽', deltaMark: 'Δ ',
+  noStorage: 'этот браузер не может хранить показания', saved: 'сохранено ✓',
+  saveMonth: 'Сохранить показания за этот месяц', applyChanges: 'Применить изменения', savedOk: 'Сохранено ✓',
+  nothingEntered: 'Показания не заполнены', priceMissing: 'цена не указана (см. настройки)',
+  lblAmount: 'месячная стоимость ₽', addMeterTitle: 'Добавить новый счетчик', clearHistory: 'Отчистить историю', confirmClear: 'Нажмите еще раз чтобы подтвердить отчистку истории',
+  lblReading: 'текущие показания', lblPrice: '₽ за ед.', lblName: 'название', lblUnit: 'единицы измерения', lblSeedBase: 'последние показания', lblActive: 'активный', lblFixed: 'фиксированная месячная плата',
+  lblPriceOf: '{x} за {unit}', colMeter: 'счетчик', colReading: 'показания', colDelta: '\u0394 показаний', colPrice: '\u20bd за ед', colMoney: '\u20bd сумма', // P4 readout + P7 table headings (placeholders stay translatable); colMoney added with the History money-per-meter column (P7-re-pin)
 };
 export const DEFAULT_CONFIG = [
-  { id: 'gas', name: 'Gas', unit: 'm³', price: 0, active: true, seed: null },
-  { id: 'electricity', name: 'Electricity', unit: 'kWh', price: 0, active: true, seed: null },
-  { id: 'water', name: 'Water', unit: 'm³', price: 0, active: true, seed: null },
-  { id: 'trash', name: 'Garbage', unit: STR.ruble + '/month', price: 1, active: true, fixed: true, seed: null },
+  { id: 'gas', name: 'Газ', unit: 'm³', price: 0, active: true, seed: null },
+  { id: 'electricity', name: 'Электричество', unit: 'kWh', price: 0, active: true, seed: null },
+  { id: 'water', name: 'Вода', unit: 'm³', price: 0, active: true, seed: null },
+  { id: 'trash', name: 'Сбор мусора', unit: STR.ruble + '/month', price: 1, active: true, fixed: true, seed: null },
 ];
 
 const numFmt = Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

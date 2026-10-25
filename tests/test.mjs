@@ -106,7 +106,7 @@ run(['buildCsv'], () => {
   const csv = A.buildCsv(wide);
   ok(csv.startsWith('\uFEFF'), 'BOM first');
   const lines = csv.split('\n');
-  eq(lines[1], 'date;Gas A;Δ Gas A;Gas A ₽;Water;Δ Water;Water ₽;Trash;Δ Trash;Trash ₽;total ₽',
+  eq(lines[1], `${A.STR.csvDate};Gas A;\u0394 Gas A;Gas A \u20bd;Water;\u0394 Water;Water \u20bd;Trash;\u0394 Trash;Trash \u20bd;${A.STR.csvTotal}`, // derive edge headers from STR: this pin is structural (config order + uniform groups + total column), not copy-language
   'wide header groups in config order + uniform labels + total column');
   ok(lines.some(l => l.startsWith('2026-08;') && l.includes(';130;30;300,00')),
   'Aug row: absolute 130, Δ from seed(100)=30, money=Δ*stored price 10');
