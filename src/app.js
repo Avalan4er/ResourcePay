@@ -11,7 +11,7 @@ export const STR = {
   nothingEntered: 'Nothing entered — type at least one reading', priceMissing: 'price not set (enter ₽ per unit in Settings)',
   lblAmount: 'monthly cost ₽', addMeterTitle: 'Add new meter', clearHistory: 'Clear saved months', confirmClear: 'Tap again to erase all saved months',
   lblReading: 'current reading', lblPrice: '₽ per unit', lblName: 'name', lblUnit: 'unit', lblSeedBase: 'latest known reading', lblActive: 'used?', lblFixed: 'fixed monthly cost, no baseline needed',
-  lblPriceOf: '{x} per {unit}', colMeter: 'meter', colReading: 'reading', colDelta: '\u0394 change', colPrice: '\u20bd per unit', // P4 readout + P7 table headings (placeholders stay translatable)
+  lblPriceOf: '{x} per {unit}', colMeter: 'meter', colReading: 'reading', colDelta: '\u0394 change', colPrice: '\u20bd per unit', colMoney: '\u20bd spent', // P4 readout + P7 table headings (placeholders stay translatable); colMoney added with the History money-per-meter column (P7-re-pin)
 };
 export const DEFAULT_CONFIG = [
   { id: 'gas', name: 'Gas', unit: 'm³', price: 0, active: true, seed: null },
