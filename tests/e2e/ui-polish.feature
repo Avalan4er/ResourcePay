@@ -9,3 +9,6 @@ Evidence: pre-fix pass printed 15 FAIL rows for P1…P7 with the rest of the pas
 - [x] Given the Bills and Settings cards: Then meter/config rows and the add-new-meter block are flat blocks on one card (transparent fill, no inner shadow), so the page stops reading as a card nested inside a card while keeping its rhythm and widths. (`P5`)
 - [x] Given the History tab: Then the CSV-save button hugs its own copy instead of being stretched across the whole phone width, and stays a comfortable tap target (as do Apply/Clear on Settings). (`P6`)
 - [x] Given saved months in History: Then each month is a small section — a heading line with the total plus a four-column table (meter name | reading | Δ reading | ₽ per unit) with one row per meter — not one run-on sentence; its raw total stays machine-readable for the money-agreement claim. (`P7`, plus a unit case that the descriptor carries that month's own reading and price)
+
+# MD3 design pass 2026-10-25 (flat edge-to-edge restyle; contracts below stay pinned)
+- [x] Given the tab strip and the mode pills: Then Material-icon ligature glyphs render from the vendored `src/material-icons.woff2` @font-face (SPEC bans CDN fonts): six `i.ic` spans use the Material Icons face at 24px and paint single ~24dp glyph boxes — a broken font falls back to ligature words and goes RED. (`MD1`, docs/ideas/md3-kit-cheatsheet.md)

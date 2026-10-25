@@ -44,6 +44,7 @@ await H.section('ui-polish: headersTop', Q.headersTop); // P1..P7 (tasks/bugs-4.
 await H.section('ui-polish: labelsOutside', Q.labelsOutside);
 await H.section('ui-polish: billsPolish', Q.billsPolish);
 await H.section('ui-polish: flatRows', Q.flatRows);
+await H.section('ui-polish: materialIcons', Q.materialIcons); // MD1 (design pass): vendored Material Icons woff2 renders real glyphs on tabs+pills, tofu fallback goes RED
 await H.section('ui-polish: buttonSize', Q.buttonSize);
 await H.section('ui-polish: monthTables', Q.monthTables); // needs the saved months ⇒ runs before the G7 history wipe below
 await H.section('settings-config: settingsCardG', S.settingsCardG); // G8/G9 card layout on the Settings tab

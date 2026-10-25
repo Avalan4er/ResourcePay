@@ -83,3 +83,11 @@ export async function monthTables() { // P7: each History item is a small sectio
   H.chk('P7 the month total keeps its own heading line so the headline figure stays readable', rows.every((r) => r.tail.includes('\u20bd') && r.tail.length > 8));
   H.chk('P7 each month carries its raw total on the section itself (money agreement reads it, not parsed prose)', rows.length >= 2 && rows.every((r) => /-?\d+(\.\d+)?$/.test(r.totalAttr)));
 }
+
+export async function materialIcons() { // MD1 (MD3 redesign pass 2026-10-25): Material Icons ligature glyphs must actually render from the VENDORED woff2 (src/material-icons.woff2) — SPEC bans CDN fonts, so a broken @font-face may not silently fall back to tofu text
+  await H.tab('tabCharts'); await H.frames(); // pills exist only on Charts; the tab strip exists on every tab
+  const faces = await H.ev(async () => { const l = await document.fonts.load('24px "Material Icons"', 'settings'); return [l.length, l.some((f) => String(f.status ?? '') === 'loaded')]; }); // fonts.load forces the face before any paint probes race it
+  const glyphs = await H.ev(() => [...document.querySelectorAll('.tabs button i.ic, .card .modeSw i.ic')].map((s) => { const c = getComputedStyle(s), r = s.getBoundingClientRect(); return { fam: String(c.fontFamily), size: c.fontSize, w: Math.round(r.width), h: Math.round(r.height) }; }));
+  H.chk('MD1a the vendored Material Icons woff2 is a loaded @font-face (no CDN font)', faces[0] > 0 && faces[1]);
+  H.chk('MD1b tab strip + mode pills paint six single-glyph boxes on the Material Icons face at 24px (fallback ligature text would read far wider)', glyphs.length === 6 && glyphs.every((g) => /Material Icons/.test(g.fam) && g.size === '24px' && g.w >= 16 && g.w <= 32 && g.h >= 16 && g.h <= 40));
+}
