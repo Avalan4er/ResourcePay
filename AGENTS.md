@@ -26,6 +26,7 @@ Workflow reminders:
 - remember of ponytail skill
 - Keep every month's calculations and CSV rows self-contained; don't add dependencies or a build step.
 - Dont write temp files
+- Cache-bust on every src asset change: GH Pages serves js/css with ~10min cache; bump EVERY `?v=` token (3 in src/index.html + 2 in src/ui.js static imports, kept in lockstep) in the same commit that touches app/storage/ui/tokens/style — a half-bumped graph ships stale mixed code
 - Prefer research api-layers before guesing
 - Never git push with --force flag
 - Never take screenshots

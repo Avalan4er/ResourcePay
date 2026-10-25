@@ -3,6 +3,7 @@
 <meta name="theme-color" content="#2f5fc4">
 <title>ResourcePay</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./tokens.css">
-<link rel="stylesheet" href="./style.css">
-<body id="app"><script type="module" src="./ui.js"></script>
+<link rel="stylesheet" href="./tokens.css?v=1">
+<link rel="stylesheet" href="./style.css?v=1">
+<!-- cache-bust rule (AGENTS.md): GH Pages caches JS/CSS up to 10min; bump EVERY ?v= token here AND the two in ui.js's imports whenever src assets change, in that same commit -->
+<body id="app"><script type="module" src="./ui.js?v=1"></script>

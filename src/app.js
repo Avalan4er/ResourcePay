@@ -14,9 +14,9 @@ export const STR = {
   lblPriceOf: '{x} за {unit}', colMeter: 'счетчик', colReading: 'показания', colDelta: '\u0394 показаний', colPrice: '\u20bd за ед', colMoney: '\u20bd сумма', // P4 readout + P7 table headings (placeholders stay translatable); colMoney added with the History money-per-meter column (P7-re-pin)
 };
 export const DEFAULT_CONFIG = [
-  { id: 'gas', name: 'Газ', unit: 'm³', price: 0, active: true, seed: null },
-  { id: 'electricity', name: 'Электричество', unit: 'kWh', price: 0, active: true, seed: null },
-  { id: 'water', name: 'Вода', unit: 'm³', price: 0, active: true, seed: null },
+  { id: 'gas', name: 'Газ', unit: 'м³', price: 0, active: true, seed: null },
+  { id: 'electricity', name: 'Электричество', unit: 'кВт/ч', price: 0, active: true, seed: null },
+  { id: 'water', name: 'Вода', unit: 'м³', price: 0, active: true, seed: null },
   { id: 'trash', name: 'Сбор мусора', unit: STR.ruble + '/month', price: 1, active: true, fixed: true, seed: null },
 ];
 
