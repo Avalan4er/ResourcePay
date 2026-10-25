@@ -58,14 +58,15 @@ export async function iosModeSwitch() { // G4: an iOS segmented switch — two r
   H.chk('G4 tapping the volume knob flips every chart back to volume bars', volBack.cards.some((c) => c.bars.length > 0) && volBack.cards.every((c) => c.bars.every((b) => !String(b.v ?? '').includes('\u20bd'))));
 }
 
-export async function switchRow() { // Z2 (tasks/bugs-3.md): the control must paint as ONE row of CSS-drawn pills whose lit state is readable — not a stacked pair of native radios
+export async function switchRow() { // Z2 (tasks/bugs-3.md) + segmented re-pin batch: the control must paint as ONE MD3 segmented button — contiguous option cells inside a single outlined pill whose selected cell carries secondary-container, not stacked native radios
   await H.tab('tabCharts'); await H.frames();
-  const pills = await H.rects('.modeSw');
-  const sideBySide = (() => { if (pills.length !== 2) return false; const [a, b] = [...pills].sort((x, y) => x[0] - y[0]); return Math.abs(a[1] - b[1]) <= 2 && b[0] - (a[0] + a[2]) >= H.GAP_MIN; })(); // one-row rule: same y-line + a real horizontal gap (the stacked render that bugs-3 reports puts a full-height y-gap here instead)
-  H.chk('Z2a the mode tracks paint side by side on ONE row and each is a full tap target', sideBySide && pills.every(([, , w, h]) => w >= H.TAP && h >= H.TAP));
-  const paint = await H.ev(() => [...document.querySelectorAll('.modeSw')].map((p) => { const i = p.querySelector('input[type=radio]'); const c = getComputedStyle(i); const k = getComputedStyle(p.querySelector('i.knob')); return { for: i?.dataset.for ?? '', checked: !!i?.checked, appearance: c.appearance, bg: String(c.backgroundColor), knobBg: String(k.backgroundColor) }; }));
+  const segs = await H.rects('.modeSw');
+  const adjacency = (() => { if (segs.length !== 2) return false; const [a, b] = [...segs].sort((x, y) => x[0] - y[0]); return Math.abs(a[1] - b[1]) <= 2 && b[0] - (a[0] + a[2]) >= -2 && b[0] - (a[0] + a[2]) <= H.GAP_MIN; })(); // segmented re-pin: cells are CONTIGUOUS on one y-line (hairline divider between), so the old "real pill gap" floor became an adjacency tolerance — stacked radios still spike this RED
+  H.chk('Z2a the mode tracks paint as two contiguous cells of ONE segmented control and each is a full tap target', adjacency && segs.every(([, , w, h]) => w >= H.TAP && h >= H.TAP));
+  const paint = await H.ev(() => [...document.querySelectorAll('.modeSw')].map((p) => { const i = p.querySelector('input[type=radio]'); const c = getComputedStyle(i); const s = getComputedStyle(p); return { for: i?.dataset.for ?? '', checked: !!i?.checked, dataOn: p.hasAttribute('data-on'), appearance: c.appearance, bg: String(c.backgroundColor), segBg: String(s.backgroundColor), ink: String(s.color) }; }));
   H.chk('Z2b no native radio control may paint on the switch (appearance none + transparent tap layer)', H.all(paint, 2, (p) => p.appearance === 'none' && (p.bg === 'transparent' || p.bg === 'rgba(0, 0, 0, 0)')));
-  const ok = await H.tokenColor('--ok'); // colour read from the app token, no literal
+  const secFill = await H.tokenColor('--secondary-container'); // colours read from the app's own tokens, no rgb literals
+  const onInk = await H.tokenColor('--on-secondary-container');
   const on = paint.filter((p) => p.checked), off = paint.filter((p) => !p.checked);
-  H.chk('Z2c exactly one mode is lit: its knob carries the app green, the other a neutral painted fill (state readable without tapping)', on.length === 1 && off.length === 1 && on[0].knobBg === ok && off[0].knobBg !== ok && off.every((p) => p.knobBg !== 'transparent' && p.knobBg !== 'rgba(0, 0, 0, 0)'));
+  H.chk('Z2c (segmented re-pin) exactly one cell is selected — its fill carries the app secondary-container role with on-secondary-container ink, unselected cells show only hairlines, and data-on always agrees with the checked radio (state readable without tapping; replaces the old painted dot)', on.length === 1 && off.length === 1 && paint.every((p) => p.dataOn === p.checked) && on[0].segBg === secFill && on[0].ink === onInk && off.every((p) => p.segBg === 'transparent' || p.segBg === 'rgba(0, 0, 0, 0)'));
 }

@@ -76,10 +76,10 @@ export async function monthTables() { // P7: each History item is a small sectio
     const body = [...r.querySelectorAll(':scope > table > tbody > tr')].map((tr) => [...tr.children].map((td) => ({ txt: (td?.textContent ?? '').trim(), col: td?.dataset.col ?? '' })));
     return { month: r.dataset.month, totalAttr: r.getAttribute('data-total') ?? '', head, body, tail: String([...r.children].pop()?.textContent ?? '').trim() };
   }));
-  const cols = ['meter', 'reading', 'delta', 'price']; // column markers are data attrs; the printed headings come from STR only
-  const heads = [AP.colMeter, AP.colReading, AP.colDelta, AP.colPrice]; // missing keys ⇒ undefined ⇒ the claim stays RED (no crash)
-  H.chk('P7 each saved month owns a real table whose four headings are STR column copy in order (name, reading, delta, per-unit)', H.all(rows, 2, (r) => r.head.length === 4 && heads.every((copy, i) => String(copy).trim() !== '' && r.head[i].col === cols[i] && r.head[i].txt === String(copy).trim())));
-  H.chk('P7 one table row per meter of that month and every cell sits under its own column', H.all(rows, 2, (r) => r.body.length >= 3 && r.body.every((tr) => tr.length === 4 && cols.every((c, i) => tr[i].col === c && tr[i].txt !== ''))));
+  const cols = ['meter', 'reading', 'delta', 'price', 'money']; // column markers are data attrs; the printed headings come from STR only (P7-re-pin: money-spent-per-month is now its own fifth column)
+  const heads = [AP.colMeter, AP.colReading, AP.colDelta, AP.colPrice, AP.colMoney]; // missing keys ⇒ undefined ⇒ the claim stays RED (no crash)
+  H.chk('P7 each saved month owns a real table whose five headings are STR column copy in order (name, reading, delta, per-unit, money spent)', H.all(rows, 2, (r) => r.head.length === 5 && heads.every((copy, i) => String(copy).trim() !== '' && r.head[i].col === cols[i] && r.head[i].txt === String(copy).trim())));
+  H.chk('P7 one table row per meter of that month and every cell sits under its own column', H.all(rows, 2, (r) => r.body.length >= 3 && r.body.every((tr) => tr.length === 5 && cols.every((c, i) => tr[i].col === c && tr[i].txt !== ''))));
   H.chk('P7 the month total keeps its own heading line so the headline figure stays readable', rows.every((r) => r.tail.includes('\u20bd') && r.tail.length > 8));
   H.chk('P7 each month carries its raw total on the section itself (money agreement reads it, not parsed prose)', rows.length >= 2 && rows.every((r) => /-?\d+(\.\d+)?$/.test(r.totalAttr)));
 }

@@ -97,7 +97,8 @@ export const TAP = 40; // iOS comfortable-tap floor in CSS px; style.css grows c
 // geometry bounds live ONCE here; each names the style.css rule it guards (loose floors/caps => layout drift goes RED, reworded copy doesn't)
 export const GAP_MIN = 4; // vertical rhythm between stacked blocks (style.css .field/.cfgRow margin:.5rem 0 + card gap) — B2/B5/C1
 export const CTRL_W_MAX = 120; // settings input width cap; style.css caps at min(100%,5.4rem)≈86px, this is the old "spans half the screen" bug bound — S2
-export const LEFT_MAX = 48; // how far a control may sit from its row's left edge before it reads as stranded; checkbox is var(--tap)=44px — S4
+export const LEFT_MAX = 48; // how far a control may sit from its row's left edge before it reads as stranded; checkbox is var(--tap)=44px — S4 (superseded by the width-filling Settings grid re-pin below, kept while any claim still cites the hug rule)
+export const CTRL_FILL_MIN = 120; // S4-re-pin: style.css flows label→control pairs two-per-line on the Settings card, so at least one control must reach this far right (grid regression back to a single left column reads < this and goes RED)
 export const ROW_W_MIN = 300; // meter row must span the phone width (390px viewport minus safe-area padding) — B4
 export const BTN_W_MAX = 200; // card buttons hug their own STR copy; .card is column-flex so children stretch full-bleed (~310px) without align-self — P6
 export const TOAST_Z_MIN = 9; // style.css .banner z-index:9 sits over sticky .tabs z-index:6 — G1/G3
