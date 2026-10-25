@@ -1,6 +1,6 @@
 // Integration-only DOM/picker/event glue — names per SPEC Testing strategy: bootLoad, persist(saveState path), tabSwitch, applyMonthForm, refreshPreviews, applyHistory+exportCsvFile, applyCharts(mode toggle), settingsApply/addMeter. Math NEVER here: src/app.js descriptors own all calcs. shortcut: tabs re-render via innerHTML each action — bills state is one flat person's data, irrelevant cost.
-import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, clearHistory, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js?v=1'; // ?v= must match index.html's tokens — bump together per AGENTS.md cache-bust rule
-import { loadState, saveState } from './storage.js?v=1';
+import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, clearHistory, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js?v=2'; // ?v= must match index.html's tokens — bump together per AGENTS.md cache-bust rule
+import { loadState, saveState } from './storage.js?v=2';
 
 let state = { config: [...DEFAULT_CONFIG], history: [] };
 let mode = 'volume', curTab = 'tabBills', bannerTxt = '', formObs = null, curMonth = null; // curMonth is the app-level selected month so Bills stays on it across tab switches
