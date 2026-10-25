@@ -7,15 +7,18 @@
 .tabs button.on{background:var(--accent);color:#fffdf8;box-shadow:.2rem .3rem .7rem #39324a55}
 .banner{position:fixed;left:.6rem;right:.6rem;bottom:calc(.55rem+env(safe-area-inset-bottom));z-index:9;pointer-events:none;background:var(--warn);color:#fffdf8;border-radius:.8rem;padding:.5rem .9rem;text-align:center;font-size:.88em;box-shadow:.2rem .4rem 1rem #0002}
 .card{background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cpath d='m0 90L45 0l45 0z' fill='%23efe9f596' opacity='.5'/%3E%3C/svg%3E") no-repeat right bottom;background-size:cover;border-radius:1.15rem;box-shadow:.25rem .5rem 1.5rem #39324a2e;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.55rem}
-.card button{border:none;border-radius:99px;padding:.6rem 1.1rem;min-height:var(--tap);background:var(--accent);color:#fffdf8;font-weight:650;cursor:pointer;touch-action:none} /* Z1: Save/Apply/export taps never arm a double-tap zoom either */
+.card button{border:none;border-radius:99px;padding:.6rem 1.1rem;min-height:var(--tap);background:var(--accent);color:#fffdf8;font-weight:650;cursor:pointer;touch-action:none;align-self:center} /* Z1: Save/Apply/export taps never arm a double-tap zoom either; P6 (tasks/bugs-4.md): .card is column-flex, so without align-self every button stretched full-bleed (~310px) */
 .card .row{display:flex;flex-wrap:wrap;gap:.4rem;padding:.32rem .7rem;border-radius:.65rem;background:#fbf6ea;font-size:.92em}
-.field{display:flex;flex-direction:column;gap:.4rem;padding:.55rem .75rem;border-radius:.85rem;background:var(--card);box-shadow:.1rem .2rem .9rem #39324a1d;margin:.5rem 0;font-size:.9em}
-.cfgRow,.cfgNew{display:flex;flex-direction:column;gap:.4rem;padding:.6rem .75rem;border-radius:.75rem;background:#f2edf9;font-size:.86em;margin:.55rem 0}
+.field{display:flex;flex-direction:column;gap:.4rem;padding:.55rem .75rem;border-radius:.85rem;background:transparent;box-shadow:none;margin:.5rem 0;font-size:.9em} /* P5 (tasks/bugs-4.md): flat row on the card — a filled+shadowed panel here read as a card inside a card */
+.cfgRow,.cfgNew{display:flex;flex-direction:column;gap:.4rem;padding:.6rem .75rem;border-radius:.75rem;background:transparent;box-shadow:none;margin:.55rem 0;font-size:.86em} /* P5 same flattening on the Settings card */
+.field,.cfgRow,.cfgNew{border-left:.25rem solid #e3daf4} /* the hairline keeps each row grouped to its controls without painting a panel */
 select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem;touch-action:none} /* Z1: same app-like tap rule for the month picker */option{height:auto;min-height:1px}
-.chart{display:flex;align-items:end;gap:.32rem;height:9rem;padding:.5rem .65rem;border-radius:.95rem;background:#f0ebfa;width:min(100%,calc(100% - 1rem));margin:.5rem 0;font-size:.78em}
-.chart i{width:min(42px,max(28px,calc((100% - 3rem) / 6)));border-radius:.35rem .35rem 0 0;min-height:3px;background:hsl(var(--h),62%,78%);color:var(--ink);display:flex;align-items:end;justify-content:center;padding-bottom:.15rem}
-.chart i.neg{background:#f3bcb6}
-.chart i span{writing-mode:vertical-rl;font-size:8.5px;letter-spacing:.04em;opacity:.78;text-align:start}
+.chart{display:flex;flex-direction:column;gap:.45rem;padding:.5rem .65rem;border-radius:.95rem;background:#f0ebfa;width:min(100%,calc(100% - 1rem));margin:.5rem 0;font-size:.78em} /* P1 (tasks/bugs-4.md): the header line owns the top; bars live in their own row under it (.card is column-flex, so a bar-less flex row beside the h4 was the bug) */
+.chart .bars{display:flex;align-items:end;gap:.32rem;height:7.6rem;padding-bottom:.95rem} /* room below the baseline holds each month's axis caption */
+.chart .bars i{width:min(42px,max(28px,calc((100% - 3rem) / 6)));border-radius:.35rem .35rem 0 0;min-height:3px;background:hsl(var(--h),62%,78%);color:var(--ink);display:flex;align-items:end;justify-content:center;padding-bottom:.15rem;position:relative}
+.chart .bars i.neg{background:#f3bcb6}
+.chart .bars i b.m{position:absolute;top:calc(100% + .2rem);left:-.4rem;font-size:.74em;white-space:nowrap} /* P2: short YY-MM axis caption UNDER the pill, never micro-text inside the paint */
+.chart small.legend{display:block;font-size:.9em;color:hsl(268 30% 46%)} /* P2 legend line: month + value per bar, horizontal and readable */
 @supports not (overscroll-x:none){body{padding:1rem}}
 
 /* B2/B4/B5/C1/S2/S4/S5: the earlier file dropped whole declarations because of missing semicolons (cards collapsed) and had no caps on input widths (controls spanned 2/3 of the screen). Every control is now capped and stacked with its label in a column, so nothing overlaps or sits stranded. */
@@ -29,4 +32,7 @@ select{border-radius:.45rem;font-size:.9em;padding:.25rem .35rem;touch-action:no
 .card .modeSw input[type=radio]{-webkit-appearance:none;appearance:none;background:transparent;border:0;position:absolute;inset:0;width:100%;height:100%;touch-action:none} /* Z2 root cause: WebKit kept painting its native radio control (no appearance reset before) — with appearance none the invisible radio is ONLY the track's tap target and every pixel comes from our CSS */
 .card .modeSw input:checked ~ i.knob{background:var(--ok)} /* lit state readable without tapping: only the selected mode's dot is green */
 .banner[data-kind="ok"]{background:var(--ok)} /* G1: success copy paints green; error banners keep --warn because they need action */
-.field i.prev,.field s.pv{font-size:.86em}
+.field i.prev,.field p.pv{font-size:.86em} /* P3: the Δ/calc line is a plain block; an HTML <s> element would paint strike-through across the figures */
+.card .row .mtbl{width:100%;border-collapse:collapse;font-size:.84em} /* P7: the per-meter table fills its section, not one run-on sentence */
+.card .row .mtbl th,.card .row .mtbl td{padding:.25rem .4rem;border-bottom:.06rem solid #ded7ee;text-align:right}
+.card .row .mtbl th:first-child,.card .row .mtbl td:first-child{text-align:left}

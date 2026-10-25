@@ -33,19 +33,20 @@ function applyMonthForm() {
 
 const monthSelect = () => { const s = document.createElement('select'); s.dataset.el = 'month'; monthOptions().forEach(x => { const o = document.createElement('option'); o.value = x; o.textContent = x; s.append(o); }); return s; }; // B1: options need visible text or the chooser renders as an empty box (B4/B2 CSS aside)
 
-function fieldRow(f) { // B7: each input carries its own STR label; B8: the price input is hidden while it equals its default so a row reads as one reading field; G5/G6: a fixed-cost row has neither a baseline line nor a ₽/unit multiplier — the number typed IS rubles
-  const row = el('div', 'field'); row.dataset.ref = f.ref;
+function fieldRow(f) { // B7: each input carries its own STR label; B8: the price INPUT hides while it equals its default; P4: the readout states which figure is in use, so the LABEL stays painted
+  const row = el('div', 'field'); row.dataset.ref = f.ref; row.dataset.unit = f.unit; // unit lands on the row so syncPrice can rewrite the readout after typing
   const def = f.savedPrice ?? state.config.find((c) => c.id === f.ref)?.price ?? 0;
-  row.append(el('b', '', `${f.name} · ${f.unit}`)); if (!f.fixed) row.append(el('i', 'prev', prevText(f)));
-  const pv = el('s', 'pv'); pv.dataset.role = 'pv';
+  row.append(el('b', '', `${f.name} \u00b7 ${f.unit}`)); if (!f.fixed) row.append(el('i', 'prev', prevText(f)));
+  const pv = el('p', 'pv'); pv.dataset.role = 'pv'; // P3: an HTML <s> element IS strikethrough, which painted a line through the calc copy
   const cur = fld('curr', f.saved ?? undefined);
   const l1 = el('i', 'lbl'); l1.dataset.for = 'curr'; l1.textContent = f.fixed ? STR.lblAmount : STR.lblReading;
   row.append(l1, cur);
-  if (!f.fixed) { const pr = fld('price', def); pr.dataset.def = String(def); const l2 = el('i', 'lbl'); l2.dataset.for = 'price'; l2.textContent = STR.lblPrice; row.append(l2, pr); } // G6: no multiplier control at all on garbage rows
+  if (!f.fixed) { const pr = fld('price', def); pr.dataset.def = String(def); const l2 = el('i', 'lbl'); l2.dataset.for = 'price'; l2.textContent = priceCopy(f.unit, def); row.append(l2, pr); } // G6/P4: no multiplier control on garbage rows; meters state their per-unit price
   row.append(pv); syncPrice(row); return row;
 }
-// B8 honest rule: the bills price input is prefilled with that month's effective ₽/unit, so it must STAY in the row (tappable, SPEC user story 1 "editable afterwards"); hiding a tappable control is a UX regression — clutter is removed by styling instead. hidden only while the user literally left it untouched AND its value equals the config default.
-const syncPrice = (row) => { const i = inp(row, 'price'), l = row.querySelector('[data-for=price]'); if (!i || !l) return; const dflt = Number(i.dataset.def ?? 0); const edited = i.value !== '' && Number.isFinite(+i.value) && +i.value !== dflt; i.hidden = !edited; l.hidden = !edited; }; // B8 evidence: hidden attr keeps the field out of the row's visual stack (CSS [hidden] rule)
+// B8 honest rule: the bills price INPUT is prefilled with that month's effective ₽/unit, so it must STAY in the row (tappable once edited); P4 makes the figure visible via the painted label instead of by un-hiding a redundant control. hidden only while the user literally left it untouched AND its value equals the config default.
+const priceCopy = (unit, v) => String(STR.lblPriceOf).replace('{x}', fmtRub(v)).replace('{unit}', unit); // P4 template lives in STR so the readout translates with the rest of the copy
+const syncPrice = (row) => { const i = inp(row, 'price'), l = row.querySelector('[data-for=price]'); if (!i || !l) return; const dflt = Number(i.dataset.def ?? 0); const edited = i.value !== '' && Number.isFinite(+i.value) && +i.value !== dflt; i.hidden = !edited; l.textContent = priceCopy(row.dataset.unit ?? '', edited ? +i.value : dflt); }; // B8: only the INPUT hides (a second hidden control is dead weight); P4: the label names the figure actually in use, so it stays painted at default
 
 // previews recompute on any attribute change in the card (harness) or real typing ('input' event listener wired in applyMonthForm).
 const prevText = (f) => f.prev == null ? STR.noSeedPrev : `${STR.prevLabel}: ${fmtInt(f.prev)}`; // one copy rule shared by build + refresh (S8/B1: switching months repaints it in place)
@@ -62,7 +63,16 @@ const collect = (box, role) => { const out = {}; box.querySelectorAll('[data-ref
 
 function applyHistory() {
   const box = el('div', 'card'); const btn = document.createElement('button'); btn.textContent = STR.exportCsv; btn.dataset.el = 'exportBtn'; btn.onclick = async () => { try { await exportCsvFile(); } catch (e) { if (e.name !== 'AbortError') toast(String(e)); } };
-  box.append(btn); describeHistoryRows(state).forEach((r) => { const detail = r.parts.map((p) => `${p.name}${p.fixed ? '' : ` ${STR.deltaMark}${fmtInt(p.delta ?? 0)} ${p.unit}`} \u00b7 ${fmtRub(p.money)}`).join(' \u00b7 '); const d = el('div', 'row', `${r.month} \u2014 ${detail} \u2014 ${STR.monthTotal}: ${r.fmt}`); d.dataset.month = r.month; box.append(d); }); return box; // H2: per-meter breakdown, then the month total from that row's stored prices
+  box.append(btn); describeHistoryRows(state).forEach((r) => { const d = el('div', 'row'); d.dataset.month = r.month; d.dataset.total = String(r.total); // P7: one section per month; data-total keeps the money-agreement claim machine-readable (prose parsing broke with the table shape)
+    d.append(el('b', '', r.month));
+    const t = document.createElement('table'); t.className = 'mtbl'; // P7: a real table so a screen reader / iPhone reads columns, not one long sentence
+    const cols = [['meter', STR.colMeter], ['reading', STR.colReading], ['delta', STR.colDelta], ['price', STR.colPrice]]; // headings are STR-only so a translated app keeps its own column words
+    const thead = document.createElement('thead'), hr = document.createElement('tr');
+    cols.forEach(([col, copy]) => { const th = document.createElement('th'); th.dataset.col = col; th.textContent = String(copy); hr.appendChild(th); });
+    thead.appendChild(hr);
+    const tbody = document.createElement('tbody');
+    r.parts.forEach((p) => { const tr = document.createElement('tr'); const cell = (col, txt) => { const td = document.createElement('td'); td.dataset.col = col; td.textContent = txt; return td; }; tr.append(cell('meter', p.name), cell('reading', fmtInt(p.curr)), cell('delta', p.fixed ? '\u2014' : `${STR.deltaMark}${fmtInt(p.delta ?? 0)} ${p.unit}`), cell('price', p.fixed ? fmtRub(p.money) : fmtRub(p.price))); tbody.appendChild(tr); }); // garbage row: its amount is the reading, no Δ, money in the price column
+    t.append(thead, tbody); d.append(t, el('i', 'mtotal', `${STR.monthTotal}: ${r.fmt}`)); box.append(d); }); return box; // H2/P7: per-meter table (name | reading | Δ | ₽/unit) plus the month's own total line
 }
 async function exportCsvFile() {
   const text = buildCsv(state), name = `resourcepay-backup-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -75,8 +85,12 @@ function applyCharts() {
   const swRow = el('div', 'swRow'); // Z2: .card paints its children as a column, so the two tracks need their own ROW — stacked label/knob pairs were the reported bug
   const knob = (label, mark, isMoney) => { const t = el('span', 'modeSw'); t.dataset.mode = mark; const l = el('i', 'lbl'); l.dataset.for = mark; l.textContent = label; const k = document.createElement('input'); k.type = 'radio'; k.dataset.for = mark; k.checked = (mode === 'money') === isMoney; if (isMoney) k.dataset.el = 'modeToggle'; k.onclick = () => { const want = isMoney ? 'money' : 'volume'; if (mode === want) return; mode = want; renderAll(); }; t.append(l, k, el('i', 'knob')); swRow.append(t); return k; }; // G4: one track per mode = its own STR label + an invisible radio covering the whole pill (style.css draws the dot, so no native control paints) ⇒ a switch where BOTH states and which is lit are visible
   knob(STR.chartVolume, 'chartVolume', false); knob(STR.chartMoney, 'chartMoney', true); box.append(swRow);
-  describeCharts(state, mode).forEach((g, i) => { const card = el('div', 'chart'); card.dataset.res = g.id; card.style.setProperty('--h', String(i * 47)); card.append(el('h4', '', g.name + (mode === 'volume' && !g.fixed ? ` · ${g.unit}` : '')));
-    if (!g.empty) g.bars.forEach(b => { const bar = document.createElement('i'); bar.dataset.month = b.month; const label = mode === 'money' ? fmtRub(b.v) : fmtInt(b.v); bar.dataset.v = label; bar.style.height = Math.max(2, g.pctOf ? Math.round(Math.abs(b.v) / g.pctOf * 100) : 2) + '%'; if (b.v < 0) bar.classList.add('neg'); bar.append(el('span', '', `${label} ${b.month}`)); card.append(bar); });
+  describeCharts(state, mode).forEach((g, i) => { const card = el('div', 'chart'); card.dataset.res = g.id; card.style.setProperty('--h', String(i * 47));
+    card.append(el('h4', '', g.name + (mode === 'volume' && !g.fixed ? ` \u00b7 ${g.unit}` : ''))); // P1: header is the first line of a column-flowed card, bars live in their own row under it
+    const bars = el('div', 'bars');
+    if (!g.empty) g.bars.forEach(b => { const bar = document.createElement('i'); bar.dataset.month = b.month; const label = mode === 'money' ? fmtRub(b.v) : fmtInt(b.v); bar.dataset.v = label; bar.style.height = Math.max(2, g.pctOf ? Math.round(Math.abs(b.v) / g.pctOf * 100) : 2) + '%'; if (b.v < 0) bar.classList.add('neg'); bar.append(el('b', 'm', b.month.slice(2))); bars.append(bar); }); // P2: the pill paints no text; a short axis caption sits under the baseline, values get their own legend line
+    card.append(bars);
+    if (!g.empty) card.append(el('small', 'legend', g.bars.map((b) => `${b.month} ${mode === 'money' ? fmtRub(b.v) : fmtInt(b.v)}`).join(' \u00b7 '))); // P2 legend: month → value pairs, horizontal and readable
     box.append(card); }); return box;
 }
 
