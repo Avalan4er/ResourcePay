@@ -4,7 +4,7 @@ import * as H from './harness.mjs';
 
 export async function freshOldestForm() { // needs a CLEAN OPFS profile: nothing predates OLDEST, so B3/B10 previews must be honest hints not faked zeros
   await H.tab('tabBills'); await H.selectMonth(H.OLDEST);
-  const refsA = await H.fieldRefs(); H.SCEN.refsA = refsA; // consumed by previews + tap-size sections below // consumed by previews + tap-size sections below
+  const refsA = await H.fieldRefs(); H.SCEN.refsA = refsA; // consumed by previews + tap-size sections below
   const optTexts = await H.ev(() => [...(document.querySelector('select[data-el=month]')?.options ?? [])].map((o) => o.textContent)); // arrow form: complex option-list accessors stay readable, Playwright deserializes the array
   // B1: options need visible text (empty box was the bug); the 24-window + newest-first rule asserted from the DOM, so ui.js drift goes RED not silent-green
   H.chk('B1 every month <select> option shows its month text and the window is the rolling 24 months newest-first', H.all(optTexts, 24, (x) => /^\d{4}-\d{2}$/.test(String(x))) && optTexts[0] === H.M1 && optTexts[H.OPT.length - 1] === H.OLDEST);
@@ -16,7 +16,7 @@ export async function freshOldestForm() { // needs a CLEAN OPFS profile: nothing
   H.chk('B4 meter rows do not sit side by side (same left edge)', H.all(rowGeo, 2, (g, i) => !g.r || i === 0 || Math.abs(g.r[0] - rowGeo[i - 1].r[0]) < 8));
   const inpStyle = await H.ev(() => { const i = document.querySelector('div.field input'); return i ? [getComputedStyle(i).borderWidth, getComputedStyle(i).paddingInline] : ['0px', '0px']; });
   H.chk('B5 inputs styled (border+padding computed) and their row keeps >=4px vertical rhythm', inpStyle[0] !== '0px' && inpStyle[1] !== '0px' && H.all(rowGeo, refsA.length, (g) => g.all.length > 1 && H.gaps(g.all).every((x) => x >= H.GAP_MIN)));
-  const lblStats = await H.ev(() => { const rows = [...document.querySelectorAll('div.field[data-ref]')]; let unlabeled = 0, labeled = 0; rows.forEach((r) => [...r.querySelectorAll('input[data-role]')].forEach((i) => { const t = String(r.querySelector(`i.lbl[data-for=${i.getAttribute('data-role')}`)?.textContent ?? '').trim(); if (t) labeled++; else unlabeled++; })); return { unlabeled, labeled }; }); // G6 changed what a row holds: every INPUT must own a label, rows need no label for controls they don't carry
+  const lblStats = await H.labelStats('div.field[data-ref]'); // G6 changed what a row holds: every INPUT must own a label, rows need no label for controls they don't carry
   H.chk('B7 every meter row labels its own inputs with STR copy', lblStats?.unlabeled === 0 && (lblStats?.labeled ?? 0) >= refsA.length + 1); // one label per input; garbage needs only its reading label
   const visPerRow = await H.ev((sels) => sels.map((sel) => [...document.querySelectorAll(sel)].filter((i) => !i.hidden).map((i) => i.dataset.role)), refsA.map((ref) => 'div.field[data-ref=' + ref + '] input')); // one batched probe; price input hides while it equals its default (B8)
   H.chk('B8 only the reading input is visible while price equals its default', H.all(visPerRow, refsA.length, (arr) => arr.length === 1 && arr[0] === 'curr'));
@@ -25,7 +25,7 @@ export async function freshOldestForm() { // needs a CLEAN OPFS profile: nothing
   H.chk('B8 price field becomes visible once edited away from its default (still editable per month)', visAfter.length === 2);
   await H.setVal(`[data-ref=${refsA[0]}] [data-role=price]`, 0);
   // B6: the save path bails out before persist, so its banner is the completion signal
-  await H.click('[data-el=saveBtn]'); await H.until('empty-form refusal banner painted', () => document.querySelector('b.banner') !== null);
+  await H.click('[data-el=saveBtn]'); await H.bannerPainted('empty-form refusal banner painted');
   H.chk('B6 save with no readings refused by STR.nothingEntered banner', (await H.snap()).banner === AP.nothingEntered);
   await H.tab('tabHistory');
   H.chk('B6 refused save created no empty month row', !((await H.snap()).rows.map((r) => r.m).includes(H.OLDEST)));
@@ -35,7 +35,7 @@ export async function previewsFresh() { // B3/B10 honest-preview rule lives once
   await H.tab('tabBills'); const refsA = H.SCEN.refsA;
   for (const ref of refsA) await H.setVal(`[data-ref=${ref}] [data-role=curr]`, 50);
   await H.beat();
-  const pvA = JSON.parse(String(await H.read("JSON.stringify([...document.querySelectorAll('[data-role=pv]')].map((e) => e.textContent))")));
+  const pvA = await H.ev(() => [...document.querySelectorAll('[data-role=pv]')].map((e) => e.textContent));
   const hintRows = pvA.filter((t) => String(t).includes('\u0394')); // previews that speak in words (hint copy), not numbers
   const moneyShown = pvA.filter((t) => /\d[.,]\d{2}\s*\u20bd/.test(String(t))); // any "n,nn ₽" figure painted into a preview
   const form = await H.snap(); const meterOnly = form.fields.filter((f) => !/\/month/.test(f.name)); // fixed-cost rows (garbage) carry no Δ math line, so hints belong to meters only
@@ -45,7 +45,7 @@ export async function previewsFresh() { // B3/B10 honest-preview rule lives once
 
 export async function priceMissingRepro() { // B10: odometer baseline IS known (Settings seeded water above) but ₽/unit still default 0 → preview must name the missing price, never paint 0,00 rubles
   await H.tab('tabBills'); await H.selectMonth(H.OLDEST); await H.setVal('[data-ref=water] [data-role=curr]', 740); await H.beat();
-  const wrow = JSON.parse(String(await H.read("JSON.stringify((() => { const r = document.querySelector('[data-ref=water]'); return r ? { prev: r.querySelector('i.prev')?.textContent ?? '', pv: r.querySelector('[data-role=pv]')?.textContent ?? '' } : null })())")));
+  const wrow = await H.ev(() => { const r = document.querySelector('[data-ref=water]'); return r ? { prev: r.querySelector('i.prev')?.textContent ?? '', pv: r.querySelector('[data-role=pv]')?.textContent ?? '' } : null; });
   H.chk('B10 baseline known but ₽/unit unset ⇒ preview names the missing price, never a 0,00 ruble figure', H.re(AP.priceMissing).test(wrow?.pv ?? '') && !/\d[.,]\d{2}\s*\u20bd/.test(wrow?.pv ?? '')); // copy read from STR (escaped), so a reworded hint is still checked against what the app owns
 }
 
@@ -57,17 +57,17 @@ export async function enterPreviousMonth() { // month-entry.feature: prev line +
   H.chk('entry: prev line shows the odometer baseline per meter (not zero)', H.all(s.fields.filter((f) => f.ref !== 'trash'), 3, (f) => /Previous reading: /.test(f.prev)));
   H.chk('entry: \u0394 + ruble preview updates as soon as a reading is typed', H.all(s.fields.filter((f) => f.curr && !/\/month/.test(f.name)), 3, (f) => (f.pv.includes('\u20bd') || new RegExp(AP.priceMissing + '|' + AP.noSeedPrev).test(f.pv)) && f.pv.length > 4)); // fixed-cost rows (garbage) intentionally have no \u20bd line; an unset price reads as words instead
   H.chk('entry: month total money line rendered', s.total.includes('\u20bd'));
-  const priceInputs = JSON.parse(String(await H.read("JSON.stringify([...document.querySelectorAll('div.field[data-ref] [data-role=price]')].length)")));
+  const priceInputs = await H.ev(() => document.querySelectorAll('div.field[data-ref] [data-role=price]').length);
   const meterFields = s.fields.filter((f) => !/\/month/.test(f.name)); // G6: a fixed-cost row has no ₽/unit multiplier at all, so only meters carry one
   H.chk('entry: every meter field carries an editable price input (defaults from config)', priceInputs === meterFields.length && meterFields.length > 0); // per-price arithmetic is unit-verified already
   await H.clickAndSave('[data-el=saveBtn]');
-  await H.tab('tabHistory'); s = await H.snap(); await H.diag('afterM0', { rows: s.rows.map((r) => r.m + ':' + r.t), title: await H.read('document.title') });
+  await H.tab('tabHistory'); s = await H.snap(); await H.diag('afterM0', { rows: s.rows.map((r) => r.m + ':' + r.t), title: await H.ev(() => document.title) });
   H.chk('entry: saved month appears in History exactly once', s.rows.filter((r) => r.m === H.M0).length === 1);
   // B9: after saving, leaving-then-re-entering must show that month's values again so a typo can be corrected in place (the STR prefill from saved rows)
   await H.tab('tabBills'); await H.selectMonth(H.M0);
   const s2 = await H.snap();
   H.chk('B9 re-entered month keeps its stored readings visible for correction', s2.fields.filter((f) => f.curr).length >= 4);
-  await H.until('success toast cleared itself', () => document.querySelector('b.banner') === null, null, 5000); // B9/S6: the success copy must expire; polling finds the moment it does (a never-clearing banner times out and the chk below stays red)
+  await H.toastCleared('success toast cleared itself'); // B9/S6: expiry rule is polled by the harness helper; a never-clearing banner times out and the chk below stays red
   H.chk('B9 success banner self-clears after ~4s (no permanent saved ✓ line)', (await H.snap()).banner === '');
   await H.setVal('[data-ref=gas] [data-role=curr]', 1070); await H.clickAndSave('[data-el=saveBtn]');
   await H.tab('tabHistory');

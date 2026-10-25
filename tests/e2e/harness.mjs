@@ -22,17 +22,16 @@ const CONSOLE = [];
 export async function openPage(url) { pg.on('console', (m) => CONSOLE.push(String(m.text ?? '').slice(0, 200))); await pg.goto(url, { waitUntil: 'networkidle' }); } // [c] lines stream only when a run is RED
 
 export const ev = async (fn, arg = null) => await pg.evaluate(fn, arg);
-export const snap = () => pg.evaluate(() => ({
+export const snap = () => pg.evaluate(() => ({ // snapshot of every marker family the features read; adding a field here beats re-probing the DOM per module
   banner: document.querySelector('b.banner')?.textContent ?? '',
   month: document.querySelector('select[data-el=month]')?.value ?? '',
   fields: [...document.querySelectorAll('div.field[data-ref]')].map((r) => ({ ref: r.dataset.ref, name: r.querySelector('b')?.textContent ?? '', prev: r.querySelector('i.prev')?.textContent ?? '', curr: r.querySelector('[data-role=curr]')?.getAttribute('value') ?? '', pv: r.querySelector('[data-role=pv]')?.textContent ?? '' })),
   total: document.querySelector('[data-el=total]')?.textContent ?? '',
   rows: [...document.querySelectorAll('div.row[data-month]')].map((r) => ({ m: r.dataset.month, t: r.textContent })),
   cards: [...document.querySelectorAll('div.chart[data-res]')].map((c) => ({ res: c.dataset.res, bars: [...c.querySelectorAll('i[data-month]')].map((b) => ({ mo: b.dataset.month, v: b.dataset.v, neg: b.classList.contains('neg'), h: parseInt(b.style.height ?? '0', 10) })) })),
-  cfgRows: [...document.querySelectorAll('[data-id]')].map((r) => ({ id: r.dataset.id, active: r.dataset.active, head: r.querySelector('b')?.textContent ?? '', name: r.querySelector('[data-role=name]')?.getAttribute('value') ?? '', price: r.querySelector('[data-role=price]')?.getAttribute('value') ?? '', seed: r.querySelector('[data-role=seed]')?.getAttribute('value') ?? '' })),
+  cfgRows: [...document.querySelectorAll('[data-id]')].map((r) => ({ id: r.dataset.id, active: r.dataset.active, head: r.querySelector('b')?.textContent ?? '', name: r.querySelector('[data-role=name]')?.getAttribute('value') ?? '', price: r.querySelector('[data-role=price]')?.getAttribute('value') ?? '', seed: r.querySelector('[data-role=seed]')?.getAttribute('value') ?? '', hasPrice: r.querySelector('[data-role=price]') !== null })),
 }));
 
-export const read = async (expr) => await pg.evaluate(expr); // legacy string-expression reader (kept for simple probes)
 export const setVal = async (sel, v) => await pg.evaluate(([s, x]) => document.querySelector(s)?.setAttribute('value', String(x)), [sel, String(v)]);
 export const setChk = async (sel, v) => await pg.evaluate(([s, b]) => { const i = document.querySelector(s); if (i) i.checked = b; }, [sel, v]);
 export const beat = async () => await pg.evaluate(() => true); // one round-trip: DOM/microtask work the previous call triggered is already applied (previews recompute synchronously on attribute mutation)
@@ -47,7 +46,10 @@ export const until = async (what, fn, arg = null, timeout = 4000) => { // polls 
 export const saves0 = async () => await pg.evaluate(() => window.rpSaved ?? 0); // ui.js counts every saveState round-trip (rpSaved) so "persist done" is observable
 export const afterSave = async (n) => await until('OPFS save round-trip done', (x) => (window.rpSaved ?? 0) > x, n, 8000);
 export const clickAndSave = async (sel) => { const n = await saves0(); await click(sel); return await afterSave(n); }; // clicks a button whose handler persists, then waits for the save round-trip to finish (rpSaved counter), not a fixed sleep
-export const persistDone = () => until('persist wrote a status banner', () => document.querySelector('b.banner') !== null); // ui.js toasts on every persist branch (savedOk / noStorage), so a banner == the save round-trip completed
+
+// ui.js paints a banner on every persist branch and SUCCESS copy expires ~4s later; both reads live here so features stay claims
+export const bannerPainted = async (what) => await until(what, () => document.querySelector('b.banner') !== null);
+export const toastCleared = async (what) => await until(what, () => document.querySelector('b.banner') === null, null, 5000); // times out on a never-clearing banner => the chk below stays RED (asserted at B9/S6)
 
 export async function click(sel) { // marker-selected button: real click when actionability holds, JS dispatch otherwise (whole-tab re-render makes stale-node waits fail — see ui.js shortcut note)
   chk('target present: ' + sel, await pg.evaluate((s) => document.querySelector(s) !== null, sel));
@@ -65,6 +67,7 @@ export async function initMonths() { OPT = monthOptions(); M1 = OPT[0]; M0 = OPT
 
 export const fieldRefs = async () => await pg.evaluate(() => [...document.querySelectorAll('div.field[data-ref]')].map((r) => r.dataset.ref)); // entry-form refs are Bills-tab-only
 export const visInputs = async (sel) => await pg.evaluate((s) => [...document.querySelectorAll(s)].filter((i) => !i.hidden).map((i) => i.dataset.role), sel); // price input hides while it equals its default (B8)
+export const labelStats = async (root) => await pg.evaluate((s) => { const rows = [...document.querySelectorAll(s)]; let unlabeled = 0, labeled = 0; rows.forEach((r) => [...r.querySelectorAll('input[data-role]')].forEach((i) => { const t = String(r.querySelector(`i.lbl[data-for=${i.getAttribute('data-role')}`)?.textContent ?? '').trim(); if (t) labeled++; else unlabeled++; })); return { unlabeled, labeled }; }, root); // per-INPUT STR label pairing (B7/S3: G6 changed which controls a row owns ⇒ count structurally)
 
 // layout evidence measures the VISUAL stack only: a display:none control (B8 hides price at default) has no rect and must not count as overlap/containment
 export const rects = async (sel) => await pg.evaluate((s) => [...document.querySelectorAll(s)].filter((e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }).map((e) => { const b = e.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; }), sel);
@@ -81,11 +84,12 @@ export const all = (list, min, pred) => list.length >= min && list.every(pred);
 // Intl ru-RU money labels keep U+2212 minus + NNBSP thousands: parse back to a number for cross-page agreement checks (charts sums vs history totals)
 export const parseMoney = (t) => parseFloat(String(t).replace('\u2212', '-').replace(/[^0-9.,-]/g, '').replace(',', '.'));
 
+export const tokenColor = async (name) => await pg.evaluate((n) => { const p = document.createElement('p'); p.style.color = 'var(' + n + ')'; document.body.append(p); const v = getComputedStyle(p).color; p.remove(); return v; }, name); // resolve an app CSS custom property to an rgb() string — colours are compared against the app's own tokens, never literals
 export async function shot(path) { await pg.screenshot({ path, fullPage: true }); } // visual evidence for the review pass (test-results/ is gitignored)
 
 export async function rowKidsAll(sels) { // one round-trip per selector batch: rows + their visible controls + every visible descendant, no per-ref await loops
-  return await pg.evaluate((list) => list.map((sel) => { const vis = (q) => [...document.querySelectorAll(q)].filter((e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }).map((e) => { const b = e.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; }); const r0 = document.querySelector(sel); const box = r0 ? (() => { const b = r0.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; })() : null; return { r: box, kids: vis(sel + ' input'), all: vis(sel + ' *') }; }), sels);
-}; // a missing row yields r=null; geometry checks below use all(...) so a null row can never pass
+  return await pg.evaluate((list) => { const rect = (e) => { const b = e.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; }; const vis = (q) => [...document.querySelectorAll(q)].filter((e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }).map(rect); return list.map((sel) => { const r0 = document.querySelector(sel); return { r: r0 ? rect(r0) : null, kids: vis(sel + ' input'), all: vis(sel + ' *') }; }); }, sels);
+} // a missing row yields r=null; geometry checks below use all(...) so a null row can never pass
 
 // single-source thresholds — same numbers style.css owns (tasks/test-deps.md keeps them in sync)
 export const TAP = 40; // iOS comfortable-tap floor in CSS px; style.css grows controls to --tap:44px, so this is the acceptance floor not the design target

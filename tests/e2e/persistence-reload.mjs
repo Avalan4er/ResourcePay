@@ -8,7 +8,7 @@ export async function bootSurvival() { // markers are per-tab: read History rows
 }
 
 export async function reloadChecks() { // --- persistence block: hard reload proves months + edited config round-tripped through OPFS
-  await H.diag('beforeReloadTitle', await H.read('document.title'));
+  await H.diag('beforeReloadTitle', await H.ev(() => document.title));
   await H.reload(); // renderAll runs only after bootLoad awaited ⇒ markers imply the load completed (harness waits on [data-tab=tabBills])
   await H.tab('tabHistory');
   const s = await H.snap(); await H.diag('afterReloadRows', s.rows.map((r) => r.m));

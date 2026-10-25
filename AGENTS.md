@@ -25,3 +25,4 @@ Workflow reminders:
 - prefer using tools instead of using commands
 - remember of ponytail skill
 - Keep every month's calculations and CSV rows self-contained; don't add dependencies or a build step.
+- Dont write temp files

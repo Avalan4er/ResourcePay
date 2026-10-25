@@ -18,13 +18,14 @@ export async function billsTyping() { // G5/G6b: the garbage row is an absolute 
 
 export async function toastColors() { // G1: a good save reports its round-trip via rpSaved and paints the success copy in the app's own --ok token; an error banner keeps --warn and stays persistent
   const nOk = await H.saves0(); await H.click('[data-el=saveBtn]');
-  H.chk('G1 save round-trip reported by rpSaved before the toast is read', (await H.until('OPFS save round-trip done', (x) => (window.rpSaved ?? 0) > x, nOk, 8000)) === true);
-  const bOk = await H.ev(() => { const b = document.querySelector('b.banner'); if (!b) return null; const c = getComputedStyle(b); const probe = document.createElement('p'); probe.style.color = 'var(--ok)'; document.body.append(probe); const okRgb = getComputedStyle(probe).color; probe.remove(); return { kind: b.dataset.kind, pos: c.position, z: Number(c.zIndex), isOkGreen: c.backgroundColor === okRgb, txt: b.textContent }; }); // G1/G3: toast marked as success + lifted above content + pinned (green read from the app's own --ok token)
+  H.chk('G1 save round-trip reported by rpSaved before the toast is read', await H.afterSave(nOk) === true);
+  const okRgb = await H.tokenColor('--ok'); // colour read from the app's own token (no rgb literal in a claim)
+  const bOk = await H.ev((ok) => { const b = document.querySelector('b.banner'); if (!b) return null; const c = getComputedStyle(b); return { kind: b.dataset.kind, pos: c.position, z: Number(c.zIndex), isOkGreen: c.backgroundColor === ok, txt: b.textContent }; }, okRgb); // G1/G3: toast marked as success + lifted above content + pinned
   H.chk('G1 success toast carries an ok kind and paints the app\'s green (--ok)', bOk?.kind === 'ok' && bOk?.isOkGreen === true); // GREEN evidence 2026-10-25: {"kind":"ok","pos":"fixed","z":9,"isOkGreen":true}
   H.chk('G1/G3 toast is taken out of document flow above content (fixed + z-index over the tab strip)', bOk?.pos === 'fixed' && (bOk?.z ?? 0) >= H.TOAST_Z_MIN);
   await H.setVal('[data-ref=gas] [data-role=curr]', '12.5'); await H.click('[data-el=saveBtn]'); await H.beat(); // a rejected save paints an error banner that must stay warn-coloured and persistent
   const bErr = await H.ev(() => { const b = document.querySelector('b.banner'); if (!b) return null; const c = getComputedStyle(b); return { kind: b.dataset.kind, bg: c.backgroundColor }; });
-  const warnRgb = await H.ev(() => { const p = document.createElement('p'); p.style.color = 'var(--warn)'; document.body.append(p); const v = getComputedStyle(p).color; p.remove(); return v; }); // same token-read as --ok above, no hardcoded rgb literal
+  const warnRgb = await H.tokenColor('--warn'); // same token-read as --ok above, no hardcoded rgb literal
   H.chk('G1 error banners keep the warn colour (only success copy turns green)', bErr?.kind === 'err' && bErr?.bg === warnRgb);
 }
 
