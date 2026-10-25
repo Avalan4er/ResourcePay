@@ -25,7 +25,7 @@
 .cfgRow > b,.cfgNew > b,i.tag{grid-column:1/-1} /* headers and info tags own their grid line; label+input pairs auto-flow two-per-line after them (G8/G9 DOM pairing unchanged) */
 .cfgNew button[data-el=addBtn]{justify-self:center}
 
-select{border:1px solid var(--outline);border-radius:var(--shape-s);background:var(--surface-variant);color:inherit;font-size:.9em;padding:var(--space-xs) var(--space-s);min-height:calc(var(--tap) + var(--space-xxs));touch-action:none} /* manual-report fix #3: the month picker reads as an MD3 outlined container, not raw native control */
+select{border:1px solid var(--outline);border-radius:var(--shape-s);background:transparent;color:inherit;min-height:var(--tap);touch-action:none} /* manual-report fix #2: month picker wears the same outlined-text-field treatment as every input (--outline 1dp, --shape-s corners, transparent over the sheet, one tap height) — UA keeps its own inner padding/arrow so text never crowds the border */
 option{height:auto;min-height:1px} /* month picker options stay native-painted (B1 reads their visible text) */
 
 /* MD3 list pattern: flat month row + the month's own table fills its section (P7), hairline rules in outline-variant */
@@ -50,7 +50,7 @@ option{height:auto;min-height:1px} /* month picker options stay native-painted (
 .card .swRow{display:inline-flex;align-items:stretch;min-height:calc(var(--tap) + var(--space-xs));padding-inline:var(--space-l);border:1px solid var(--outline);border-radius:var(--shape-full);background:transparent;font-size:.9em;touch-action:none;align-self:center} /* align-self so the control hugs its content instead of full-bleeding (.card is column-flex — same P6-class stretch) */
 .card .modeSw{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--space-xs);min-height:calc(var(--tap) + var(--space-xxs));padding-inline:var(--space-m);border:none;border-radius:0;background:transparent;color:var(--on-surface);font-weight:500;touch-action:none} /* L/R padding min 12dp per segmented-button spec; the cell itself is transparent until selected */
 .card .swRow .modeSw:not(:first-child){border-inline-start:1px solid var(--outline)} /* hairline divider between option cells (segmented group) */
-.card .modeSw[data-on]{background:var(--secondary-container);color:var(--on-secondary-container);border-radius:var(--shape-s)} /* selected segment carries the container role — ui.js marks data-on because CSS has no parent selector; shortcut: uniform corner radius on end segments, upgrade when split-button variants land */
+.card .modeSw[data-on]{background:var(--secondary-container);color:var(--on-secondary-container);border-radius:var(--shape-full)} /* MD3 segmented buttons: the selected ITEM takes the container's fully-rounded shape (Material renders the highlight as a stadium filling the segment, corners matching the pill) — manual-report fix #1 */
 .card .modeSw i.lbl{font-size:1em;color:inherit} /* the track's own copy is its label, not a caption above it */
 .card .modeSw input[type=radio]{-webkit-appearance:none;appearance:none;background:transparent;border:0;position:absolute;inset:0;width:100%;height:100%;touch-action:none} /* Z2 root cause: WebKit kept painting its native radio control (no appearance reset before) — with appearance none the invisible radio is ONLY the cell's tap target and every pixel comes from our CSS */
 
