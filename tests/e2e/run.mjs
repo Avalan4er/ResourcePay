@@ -53,6 +53,10 @@ await H.section('design-v2: navBottom', D.navBottom); // D1 — fixed bottom nav
 await H.section('design-v2: buttonRoles', D.buttonRoles); // D2 — outlined Export, error Clear, filled-primary Save/Apply
 await H.section('design-v2: darkScheme', D.darkScheme); // D3 — prefers-color-scheme re-tones the token ladder
 await H.section('design-v2: totalBlock', D.totalBlock); // D4 — the month's money is the Bills anchor figure
+await H.section('design-v2: scrollClearance', D.scrollClearance); // U1 (bugs-5) — the scroll container owns the nav-bar clearance
+await H.section('design-v2: settingsList', D.settingsList); // U2 (bugs-5) — Settings meters as MD3 list groups + switch toggle
+await H.section('design-v2: buttonSystem', D.buttonSystem); // U3 (bugs-5) — one button family, Add names itself, Clear is an error text button
+await H.section('design-v2: darkInk', D.darkInk); // U4 (bugs-5) — input ink follows --on-surface in dark scheme
 await H.section('settings-config: settingsCardG', S.settingsCardG); // G8/G9 card layout on the Settings tab
 await H.section('settings-config: wipeSavedMonths', S.wipeSavedMonths); // destructive ⇒ two taps; months survive/disarm rules
 await H.errorTrailChk(); // ui.js parks glue throws in document.title + console — those trails must not be green-and-lost (rpSaved alone would launder them)

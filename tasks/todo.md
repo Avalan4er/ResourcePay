@@ -111,3 +111,10 @@ mode-aware (both modes probed, stronger not weaker).
       final reviewed tree (review pass: bottom-padding calc fix + labelsOutside mode leave-behind).
 - [x] Human review + commit — landed 2026-10-29 as `40159f9` (feat) + `9dc5292` (docs) on `main`, pushed to origin. Cache-bust tokens at `?v=3`.
 
+## Bug batch 5 (live-usage report 2026-10-29 — tasks/bugs-5.md)
+
+- [x] U1 scroll clearance on the scroll container · U2 Settings as MD3 list groups + switch · U3 button
+      family (roles by paint, STR.addMeter) · U4 scheme-aware input ink. RED 7/218 → GREEN **218/218**,
+      unit 14/14, fresh profile, 18.0s. All 5 `?v=` tokens bumped to 5 in lockstep.
+- [ ] Human review + commit + push (working tree carries batch 5; commit on user's go-ahead).
+

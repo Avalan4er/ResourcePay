@@ -62,8 +62,20 @@ default-rounded everything · any UI string outside `STR` · any new dependency 
 - [x] Slice 2 focus rings — `:focus-visible` 2px `--primary` ring on every painted control (no dedicated claim row yet; verified by inspection, zero regressions in the 206-row pass).
 - [x] Cache-bust: all 5 `?v=` tokens bumped 2→3 in the same change (3 in `src/index.html` + 2 in `src/ui.js` imports).
 
-Full-pass evidence 2026-10-29 (final reviewed tree): unit `OK unit layer — 14/14 exports exercised`;
-acceptance **ALL 207 checks GREEN, exit 0, [elapsed] 32.2s** on a fresh OPFS profile (Edge, 390×844).
+## v2.1 amendments (bug batch 5, live-usage report — tasks/bugs-5.md)
+
+- **Scroll clearance lives on the scroll container**: `#app` owns the 64px+ nav-bar clearance; body keeps
+  its page gutter only (double-painting would inflate the tail gap).
+- **Settings = MD3 list groups**: per-meter full-width lines (label left / control right, hairline-divided,
+  ≥44px) with a switch-painted active toggle; the add-new block keeps its pinned grid.
+- **Button family**: one pill family, root-relative font, role by paint only — filled primary /
+  outlined secondary / error TEXT destructive (16px inline padding family-wide so long Cyrillic copy stays
+  inside the P6 hug bound).
+- **Scheme-aware native controls**: `color-scheme` on `:root` per scheme + `color:inherit` input ink.
+
+Batch-5 evidence 2026-10-29 (U1–U4): pre-fix RED 7/218 (exactly the U-claims); post-fix **unit 14/14 +
+acceptance ALL 218 checks GREEN, exit 0, [elapsed] 18.0s** on a fresh OPFS profile; regressions found by
+the post-fix pass fixed in-batch and re-verified (details: tasks/bugs-5.md Evidence).
 Review pass fixed two nits (body bottom-padding calc, labelsOutside leaves the suite back in volume mode).
 All 182 pre-redesign checks stayed green —
 the P2 legend claim was re-pinned mode-aware (stronger, not weaker: it now covers both modes). Harness additions:

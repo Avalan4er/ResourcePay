@@ -1,6 +1,6 @@
 // Integration-only DOM/picker/event glue — names per SPEC Testing strategy: bootLoad, persist(saveState path), tabSwitch, applyMonthForm, refreshPreviews, applyHistory+exportCsvFile, applyCharts(mode toggle), settingsApply/addMeter. Math NEVER here: src/app.js descriptors own all calcs. shortcut: tabs re-render via innerHTML each action — bills state is one flat person's data, irrelevant cost.
-import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, clearHistory, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js?v=3'; // ?v= must match index.html's tokens — bump together per AGENTS.md cache-bust rule
-import { loadState, saveState } from './storage.js?v=3';
+import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, clearHistory, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js?v=5'; // ?v= must match index.html's tokens — bump together per AGENTS.md cache-bust rule
+import { loadState, saveState } from './storage.js?v=5';
 
 let state = { config: [...DEFAULT_CONFIG], history: [] };
 let mode = 'volume', curTab = 'tabBills', bannerTxt = '', formObs = null, curMonth = null; // curMonth is the app-level selected month so Bills stays on it across tab switches
@@ -99,20 +99,22 @@ function applyCharts() {
 
 function applySettings() {
   const box = el('div', 'card');
-  state.config.forEach((c) => { const row = el('div', 'cfgRow'); row.dataset.id = c.id; row.dataset.active = c.active !== false ? '1' : '0'; // S4: compact widths in style.css keep the toggle next to its inputs, no stranded third-of-page whitespace
+  state.config.forEach((c) => { const row = el('div', 'cfgRow'); row.dataset.id = c.id; row.dataset.active = c.active !== false ? '1' : '0';
     row.append(el('b', '', `${c.name} \u00b7 ${c.unit}${c.fixed ? '' : ` @ ${fmtRub(c.price)}`}`)); // S1: no "seed: no baseline yet" spam; G6: a fixed-cost row has no ₽/unit to show
     if (c.seed != null) row.append(el('i', 'tag', `${STR.lblSeedBase}: ${fmtInt(c.seed)}`)); if (c.fixed) row.append(el('i', 'tag', STR.lblFixed)); // the stored baseline is echoed only when it exists
-    const l1 = el('i', 'lbl'); l1.dataset.for = 'name'; l1.textContent = STR.lblName; const nm = document.createElement('input'); nm.type = 'text'; nm.dataset.role = 'name'; nm.setAttribute('value', c.name);
-    const l2 = el('i', 'lbl'); l2.dataset.for = 'price'; l2.textContent = STR.lblPrice; const pr = fld('price', c.price);
-    const l3 = el('i', 'lbl'); l3.dataset.for = 'active'; l3.textContent = STR.lblActive; const sw = document.createElement('input'); sw.type = 'checkbox'; sw.dataset.role = 'active'; sw.checked = c.active !== false;
-    row.append(l1, nm); if (!c.fixed) row.append(l2, pr); row.append(l3, sw); if (!c.fixed) { const l4 = el('i', 'lbl'); l4.dataset.for = 'seed'; l4.textContent = STR.lblSeedBase; row.append(l4, fld('seed', c.seed)); } box.append(row); }); // G6: a fixed-cost row offers no ₽/unit multiplier (its money is the absolute monthly amount), and no baseline seed input
+    const line = (role, label, input) => { const d = el('div', 'cfgLine'); const l = el('i', 'lbl'); l.dataset.for = role; l.textContent = label; d.append(l, input); row.append(d); }; // U2: one full-width list line per field — label left, control right (markers: i.lbl[data-for] + input[data-role] inside [data-id])
+    const nm = document.createElement('input'); nm.type = 'text'; nm.dataset.role = 'name'; nm.setAttribute('value', c.name);
+    line('name', STR.lblName, nm); if (!c.fixed) line('price', STR.lblPrice, fld('price', c.price));
+    const sw = document.createElement('input'); sw.type = 'checkbox'; sw.dataset.role = 'active'; sw.checked = c.active !== false;
+    line('active', STR.lblActive, sw); if (!c.fixed) line('seed', STR.lblSeedBase, fld('seed', c.seed)); box.append(row); }); // G6: a fixed-cost row offers no ₽/unit multiplier (its money is the absolute monthly amount), and no baseline seed input
   const add = el('div', 'cfgNew'); add.append(el('b', '', STR.addMeterTitle)); // G9: card names what it does; the seed-required sentence is a field hint below, not the header
   const nm2 = document.createElement('input'); nm2.type = 'text'; nm2.dataset.role = 'name';
   const un2 = document.createElement('input'); un2.type = 'text'; un2.dataset.role = 'unit'; un2.setAttribute('value', 'm³');
   const pr2 = fld('price', 0); const sd2 = fld('seed');
   [[nm2, 'name', STR.lblName], [un2, 'unit', STR.lblUnit], [pr2, 'price', STR.lblPrice], [sd2, 'seed', STR.lblSeedBase]].forEach(([i, role, label]) => { const lab = el('i', 'lbl'); lab.dataset.for = role; lab.textContent = label; add.append(lab, i); }); // G8: one label directly above its own input (same pairing as fieldRow), not four labels then four inputs
   add.append(el('i', 'tag', STR.seedRequired)); // new meter needs the odometer baseline; without it month-1 diffs would be wrong, so seed is mandatory (updateConfig rejects it otherwise too)
-  const ab = document.createElement('button'); ab.textContent = '+'; ab.dataset.el = 'addBtn'; ab.onclick = () => { if (!nm2.value.trim() || sd2.value === '' || !Number.isFinite(+sd2.value)) return toast(STR.seedRequired); try { state = updateConfig(state, { id: 'm' + Date.now().toString(36), name: nm2.value.trim(), unit: un2.value || 'm³', price: +(pr2.value || 0), active: true, seed: Math.round(+sd2.value) }); persist(state); renderAll(); } catch (_) { toast(STR.seedRequired); } }; // adding a meter is structural => repaint so the new row shows
+  const ab = document.createElement('button'); ab.textContent = '+ ' + STR.addMeter; ab.dataset.el = 'addBtn'; // U3: the Add action names itself (leading + is a decorative glyph, the copy is STR)
+  ab.onclick = () => { if (!nm2.value.trim() || sd2.value === '' || !Number.isFinite(+sd2.value)) return toast(STR.seedRequired); try { state = updateConfig(state, { id: 'm' + Date.now().toString(36), name: nm2.value.trim(), unit: un2.value || 'm³', price: +(pr2.value || 0), active: true, seed: Math.round(+sd2.value) }); persist(state); renderAll(); } catch (_) { toast(STR.seedRequired); } }; // adding a meter is structural => repaint so the new row shows
   add.append(ab); box.append(add);
   const clr = document.createElement('button'); clr.textContent = STR.clearHistory; clr.dataset.el = 'clearBtn'; clr.onclick = () => { if (!pendingClear) { pendingClear = true; return toast(STR.confirmClear); } pendingClear = false; state = clearHistory(state); persist(state); renderAll(); }; // G7 task: wiping every saved month is destructive, so it takes two taps (first arms + paints the confirm copy); tabSwitch disarms
   box.append(clr);

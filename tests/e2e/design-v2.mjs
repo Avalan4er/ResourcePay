@@ -33,7 +33,7 @@ export async function buttonRoles() { // D2 — filled-primary is for Save/Apply
   H.chk('D2 Export is the outlined secondary action (transparent fill, 1dp outline, primary ink)', !exp.missing && (exp.bg === 'transparent' || exp.bg === 'rgba(0, 0, 0, 0)') && exp.bw === '1px' && exp.color === pri && exp.h >= H.TAP);
   await H.tab('tabSettings');
   const [clr, app] = await grab(['[data-el=clearBtn]', '[data-el=applyBtn]']);
-  H.chk('D2 Clear wears the error role so the destructive action cannot pass as primary', !clr.missing && clr.bg === warn && clr.color === onWarn && clr.h >= H.TAP);
+  H.chk('D2/U3 Clear wears the error role as a text button (transparent fill, --warn ink) so the destructive action cannot pass as primary', !clr.missing && (clr.bg === 'transparent' || clr.bg === 'rgba(0, 0, 0, 0)') && clr.color === warn && clr.h >= H.TAP); // re-pinned with U3 (tasks/bugs-5.md): role signal = error ink, not a third fill style
   H.chk('D2 Apply stays filled-primary next to the error-toned Clear', !app.missing && app.bg === pri && app.color === onPri && app.h >= H.TAP);
 }
 
@@ -43,6 +43,45 @@ export async function darkScheme() { // D3 — the dual scheme re-tones the role
   H.chk('D3 dark scheme re-tones the role ladder (surface/primary/ok all differ from the light defaults)', dark.surf !== light.surf && dark.pri !== light.pri && dark.ok !== light.ok);
   const back = await H.tokenColor('--surface');
   H.chk('D3 the emulation restores the light scheme for the sections that follow', back === light.surf);
+}
+
+export async function scrollClearance() { // U1 (tasks/bugs-5.md) — the clearance for the fixed bottom nav must live on the scroll container (#app), not only on body
+  const pb = await H.ev(() => parseFloat(getComputedStyle(document.getElementById('app')).paddingBottom));
+  H.chk('U1 the content column itself clears the fixed 64px nav bar (bottom padding on the scroll container)', Number.isFinite(pb) && pb >= H.NAV_H + 8);
+}
+
+export async function settingsList() { // U2 (tasks/bugs-5.md) — Settings meters read as MD3 list groups: full-width lines, label left / control right, hairline-divided, switch-painted toggle
+  await H.tab('tabSettings'); await H.frames();
+  const rows = await H.ev(() => [...document.querySelectorAll('[data-id]')].map((r) => {
+    const lines = [...r.querySelectorAll(':scope > .cfgLine')].map((d) => { const c = getComputedStyle(d); const inp = d.querySelector('input'); const ir = inp?.getBoundingClientRect(), dr = d.getBoundingClientRect(); return { display: c.display, minH: parseFloat(c.minHeight) || 0, borderTop: String(c.borderTopColor), inRow: !!inp && !!ir && ir.right <= dr.right + 1 && ir.left >= dr.left - 1 }; });
+    const sw = r.querySelector('input[type=checkbox]');
+    return { lines, sw: sw ? { appearance: String(getComputedStyle(sw).appearance), checked: sw.checked, w: Math.round(sw.getBoundingClientRect().width), h: Math.round(sw.getBoundingClientRect().height) } : null };
+  }));
+  const oline = await H.tokenColor('--outline-variant');
+  H.chk('U2 every meter renders as full-width list lines (label-led, control inside the line, >=40px rhythm, hairline-divided)', rows.length >= 3 && rows.every((r) => r.lines.length >= 2 && r.lines.every((l) => l.display === 'flex' && l.inRow && l.minH >= 40 && l.borderTop === oline)));
+  H.chk('U2 the active toggle paints as an MD3 switch (no native checkbox, track-sized, not a 44px box)', rows.length >= 3 && rows.every((r) => r.sw && r.sw.appearance === 'none' && r.sw.w >= 44 && r.sw.w <= 60 && r.sw.h >= 28 && r.sw.h <= 40));
+}
+
+export async function buttonSystem() { // U3 (tasks/bugs-5.md) — one button family: same height/font, role by paint only, Add carries a real STR label
+  await H.tab('tabBills');
+  const grab = () => H.ev(() => [...document.querySelectorAll('.card button')].map((b) => { const c = getComputedStyle(b); const r = b.getBoundingClientRect(); return { el: b.dataset.el ?? '', h: Math.round(r.height), fs: parseFloat(c.fontSize), txt: b.textContent.trim() }; }));
+  const billsBtns = await grab();
+  await H.tab('tabSettings');
+  const setBtns = await grab();
+  const all = [...billsBtns, ...setBtns];
+  const hs = [...new Set(all.map((b) => b.h))], fss = [...new Set(all.map((b) => b.fs))];
+  H.chk('U3 one button family: every card button shares one height and one font size', all.length >= 4 && hs.length === 1 && fss.length === 1 && hs[0] >= H.TAP);
+  const add = setBtns.find((b) => b.el === 'addBtn');
+  H.chk('U3 the Add-meter button names itself (leading + plus the STR.addMeter label, not a bare glyph)', !!add && add.txt.startsWith('+') && add.txt.includes(AP.addMeter));
+  const warn = await H.tokenColor('--warn');
+  const clr = await H.ev(() => { const b = document.querySelector('[data-el=clearBtn]'); if (!b) return null; const c = getComputedStyle(b); return { bg: String(c.backgroundColor), color: String(c.color) }; });
+  H.chk('U3 the destructive action is an error TEXT button (transparent fill, --warn ink) inside the same family', !!clr && (clr.bg === 'transparent' || clr.bg === 'rgba(0, 0, 0, 0)') && clr.color === warn);
+}
+
+export async function darkInk() { // U4 (tasks/bugs-5.md) — input ink follows --on-surface under an emulated dark scheme (UA CanvasText stays dark in both schemes)
+  await H.tab('tabBills'); await H.frames();
+  const [ink, tok] = await H.withDark(async () => [await H.ev(() => String(getComputedStyle(document.querySelector('.field input')).color)), await H.tokenColor('--on-surface')]);
+  H.chk('U4 in dark scheme input ink equals the app --on-surface token (no black-on-dark UA default)', ink === tok);
 }
 
 export async function totalBlock() { // D4 — the month's money is the visual anchor of the Bills tab

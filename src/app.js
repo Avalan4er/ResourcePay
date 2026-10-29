@@ -9,7 +9,7 @@ export const STR = {
   noStorage: 'этот браузер не может хранить показания', saved: 'сохранено ✓',
   saveMonth: 'Сохранить показания за этот месяц', applyChanges: 'Применить изменения', savedOk: 'Сохранено ✓',
   nothingEntered: 'Показания не заполнены', priceMissing: 'цена не указана (см. настройки)',
-  lblAmount: 'месячная стоимость ₽', addMeterTitle: 'Добавить новый счетчик', clearHistory: 'Отчистить историю', confirmClear: 'Нажмите еще раз чтобы подтвердить отчистку истории',
+  lblAmount: 'месячная стоимость ₽', addMeterTitle: 'Добавить новый счетчик', addMeter: 'Добавить', clearHistory: 'Отчистить историю', confirmClear: 'Нажмите еще раз чтобы подтвердить отчистку истории',
   lblReading: 'текущие показания', lblPrice: '₽ за ед.', lblName: 'название', lblUnit: 'единицы измерения', lblSeedBase: 'последние показания', lblActive: 'активный', lblFixed: 'фиксированная месячная плата',
   lblPriceOf: '{x} за {unit}', colMeter: 'счетчик', colReading: 'показания', colDelta: '\u0394 показаний', colPrice: '\u20bd за ед', colMoney: '\u20bd сумма', // P4 readout + P7 table headings (placeholders stay translatable); colMoney added with the History money-per-meter column (P7-re-pin)
   emptyHistory: 'Сохранённых месяцев пока нет', emptyCharts: 'Нет данных — сохраните показания за месяц', // design v2 empty states (History tab / bar-less charts on a fresh profile)

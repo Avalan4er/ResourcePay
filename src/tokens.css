@@ -10,6 +10,7 @@
 --tap:44px; /* iOS comfortable-tap design target; acceptance floor TAP=40 sits under it (harness keeps them in sync, tasks/test-deps.md) */
 --space-xxs:2px;--space-xs:4px;--space-s:8px;--space-m:12px;--space-l:16px;--space-xl:24px;--space-xxl:32px; /* 8dp base scale (md.sys.measurement.space100=8); nested steps 2/4 kept as xxs/xs */
 --shape-xs:4px;--shape-s:8px;--shape-m:12px;--shape-l:16px;--shape-full:9999px; /* shape ladder xs/s/m/l + full (Expressive refresh: fully rounded is a token, not 50%) */
+color-scheme:light; /* U4: native controls (select dropdown, spinners, scrollbars) follow the app scheme instead of the UA default */
 }
 
 /* dark scheme — same role ladder, MD3 dark tones (light-80 inks on deep neutral surfaces); bar hues stay put (hsl 42% 68% reads correctly on dark too) */
@@ -20,6 +21,7 @@
 --outline:#8f97a6;--outline-variant:#3a4354;
 --ok:#8fd6ae;--on-ok:#0a2e1f;--warn:#f0aaa4;--on-warn:#40110c;
 --bar-neg:#5c2620;
+color-scheme:dark;
 }
 }
 
