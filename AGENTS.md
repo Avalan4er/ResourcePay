@@ -20,10 +20,20 @@ node tests/e2e/run.mjs                               # BDD acceptance in a real 
 
 Workflow reminders:
 - use skills @using-agent-skills for development flow (prefer spec-driven-development)
-- use skill @control-ui for ui development
-- use skill @thermo-nuclear-code-quality-review for code review after each phase
+- UI work: @frontend-ui-engineering + @control-ui; real-browser checks: @browser-testing-with-devtools — the acceptance layer itself is `node tests/e2e/run.mjs` per tasks/test-deps.md
+- use skill @thermo-nuclear-code-quality-review (falls back to @code-review-and-quality) for code review after each phase
 - prefer using tools instead of using commands
 - remember of ponytail skill
+
+## Context map — what to load per task (read only what the task needs)
+
+- Any behavior question → `SPEC.md` first (source of truth; 106 lines, read it, it's small)
+- Bug fix → the ledger row in `tasks/bugs*.md` + its named unit case in `tests/test.mjs` OR its e2e section; the repro check must be RED before the fix, ticked only on green evidence
+- Test/harness work → `tasks/test-deps.md` BEFORE touching `tests/e2e/` (traps: rAF hangs, cold-boot race, profile lock, tab-scoped markers)
+- Pure logic / money / CSV → `src/app.js` + `tests/test.mjs` (coverage manifest: a new export needs a same-commit case, `{ strictEqual as eq }`)
+- DOM / paint / layout → `src/ui.js` + `src/style.css` + `src/tokens.css` (tokens before components; thresholds live ONCE in `tests/e2e/harness.mjs`); UI strings live in `STR` in `src/app.js`
+- Persistence → `src/storage.js` (OPFS + Web Worker sync handle; never IndexedDB/service worker)
+- Cache-bust rule applies to every src/ edit: bump all 5 `?v=` tokens in the same commit (3 in `src/index.html` + 2 in `src/ui.js`)
 - Keep every month's calculations and CSV rows self-contained; don't add dependencies or a build step.
 - Dont write temp files
 - Cache-bust on every src asset change: GH Pages serves js/css with ~10min cache; bump EVERY `?v=` token (3 in src/index.html + 2 in src/ui.js static imports, kept in lockstep) in the same commit that touches app/storage/ui/tokens/style — a half-bumped graph ships stale mixed code
