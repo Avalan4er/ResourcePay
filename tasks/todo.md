@@ -109,5 +109,5 @@ mode-aware (both modes probed, stronger not weaker).
 - [x] Fresh-profile acceptance `node tests/e2e/run.mjs` → **ALL 207 checks GREEN, exit 0, [elapsed] 32.2s**
       (Edge phone viewport; all 182 pre-redesign checks stayed green). Evidence: full PASS output 2026-10-29,
       final reviewed tree (review pass: bottom-padding calc fix + labelsOutside mode leave-behind).
-- [ ] Human review + commit (cache-bust tokens already at `?v=3` in the working tree; commit only on user's go-ahead).
+- [x] Human review + commit — landed 2026-10-29 as `40159f9` (feat) + `9dc5292` (docs) on `main`, pushed to origin. Cache-bust tokens at `?v=3`.
 
