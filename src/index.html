@@ -1,9 +1,10 @@
 <!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,shrink-to-fit=no,viewport-fit=cover">
-<meta name="theme-color" content="#2f5fc4">
+<meta name="theme-color" content="#2f5fc4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141c" media="(prefers-color-scheme: dark)"> <!-- design v2 dual scheme: browser chrome follows the OS scheme -->
 <title>ResourcePay</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./tokens.css?v=2">
-<link rel="stylesheet" href="./style.css?v=2">
+<link rel="stylesheet" href="./tokens.css?v=3">
+<link rel="stylesheet" href="./style.css?v=3">
 <!-- cache-bust rule (AGENTS.md): GH Pages caches JS/CSS up to 10min; bump EVERY ?v= token here AND the two in ui.js's imports whenever src assets change, in that same commit -->
-<body id="app"><script type="module" src="./ui.js?v=2"></script>
+<body id="app"><script type="module" src="./ui.js?v=3"></script>

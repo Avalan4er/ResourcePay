@@ -86,6 +86,7 @@ export const all = (list, min, pred) => list.length >= min && list.every(pred);
 export const parseMoney = (t) => parseFloat(String(t).replace('\u2212', '-').replace(/[^0-9.,-]/g, '').replace(',', '.'));
 
 export const tokenColor = async (name) => await pg.evaluate((n) => { const p = document.createElement('p'); p.style.color = 'var(' + n + ')'; document.body.append(p); const v = getComputedStyle(p).color; p.remove(); return v; }, name); // resolve an app CSS custom property to an rgb() string — colours are compared against the app's own tokens, never literals
+export const withDark = async (fn) => { await pg.emulateMedia({ colorScheme: 'dark' }); try { return await fn(); } finally { await pg.emulateMedia({ colorScheme: 'light' }); } }; // D3: dual-scheme probes run under an emulated prefers-color-scheme, then the page returns to light so later sections read the default paint
 
 export async function rowKidsAll(sels) { // one round-trip per selector batch: rows + their visible controls + every visible descendant, no per-ref await loops
   return await pg.evaluate((list) => { const rect = (e) => { const b = e.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; }; const vis = (q) => [...document.querySelectorAll(q)].filter((e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }).map(rect); return list.map((sel) => { const r0 = document.querySelector(sel); return { r: r0 ? rect(r0) : null, kids: vis(sel + ' input'), all: vis(sel + ' *') }; }); }, sels);
@@ -101,7 +102,8 @@ export const LEFT_MAX = 48; // how far a control may sit from its row's left edg
 export const CTRL_FILL_MIN = 120; // S4-re-pin: style.css flows label→control pairs two-per-line on the Settings card, so at least one control must reach this far right (grid regression back to a single left column reads < this and goes RED)
 export const ROW_W_MIN = 300; // meter row must span the phone width (390px viewport minus safe-area padding) — B4
 export const BTN_W_MAX = 200; // card buttons hug their own STR copy; .card is column-flex so children stretch full-bleed (~310px) without align-self — P6
-export const TOAST_Z_MIN = 9; // style.css .banner z-index:9 sits over sticky .tabs z-index:6 — G1/G3
+export const TOAST_Z_MIN = 9; // style.css .banner z-index:9 sits over the fixed bottom nav bar (.tabs z-index:6) — G1/G3
+export const NAV_H = 64; // style.css bottom navigation bar cell height (safe-area inset pads below it) — design v2 D1
 
 // escape STR copy when a check needs it as a pattern (copy can contain ()?+ literals)
 export const re = (s) => new RegExp(s.replace(/[.*+?^{}()|\[\]\\]/g, '\\$&'));

@@ -95,3 +95,19 @@ One runner invocation per pass.
 - [x] Single runner invocation (`node tests/e2e/run.mjs`), ALL acceptance checks green, `[elapsed]` not regressed; `tasks/bugs*.md` repro labels resolve to named checks unchanged. Evidence 2026-10-25: **ALL 153 acceptance checks GREEN in Edge phone viewport, exit 0, [elapsed] 12.2s** (was 148 checks / 12.9s before the split), captured in `test-results/e2e-run.txt`; stale-profile run: exit 1, FAIL rows precondition + B3 + B10.
 - [x] Ledger cross-check inline (not a new gate file): every bug id named in `tasks/bugs.md` + `tasks/bugs-2.md` resolves either to a green PASS row in the acceptance evidence or to its unit-layer case in `tests/test.mjs` — 31 ids checked, 0 orphaned by the split.
 
+---
+
+# Phase 8 — Design v2 (full UI redesign, approved 2026-10-29)
+
+Contract + per-claim evidence: `tasks/design-v2.md` (D1 bottom nav · D2 button roles · D3 dark scheme ·
+D4 total anchor block · D5 chart value labels · D6 empty states). SPEC.md amended in-pass (dual scheme,
+chart-label wording). `src/app.js` math/CSV untouched (STR keys only); ui.js/style.css/tokens.css/index.html
+carry the redesign; harness gains `design-v2.mjs` + `H.withDark` + `H.NAV_H`; P2 legend claim re-pinned
+mode-aware (both modes probed, stronger not weaker).
+
+- [x] Unit gate `node tests/test.mjs` → 14/14 exports (2026-10-29).
+- [x] Fresh-profile acceptance `node tests/e2e/run.mjs` → **ALL 207 checks GREEN, exit 0, [elapsed] 32.2s**
+      (Edge phone viewport; all 182 pre-redesign checks stayed green). Evidence: full PASS output 2026-10-29,
+      final reviewed tree (review pass: bottom-padding calc fix + labelsOutside mode leave-behind).
+- [ ] Human review + commit (cache-bust tokens already at `?v=3` in the working tree; commit only on user's go-ahead).
+

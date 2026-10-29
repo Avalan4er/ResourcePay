@@ -1,6 +1,6 @@
 // Integration-only DOM/picker/event glue — names per SPEC Testing strategy: bootLoad, persist(saveState path), tabSwitch, applyMonthForm, refreshPreviews, applyHistory+exportCsvFile, applyCharts(mode toggle), settingsApply/addMeter. Math NEVER here: src/app.js descriptors own all calcs. shortcut: tabs re-render via innerHTML each action — bills state is one flat person's data, irrelevant cost.
-import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, clearHistory, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js?v=2'; // ?v= must match index.html's tokens — bump together per AGENTS.md cache-bust rule
-import { loadState, saveState } from './storage.js?v=2';
+import { DEFAULT_CONFIG, STR, fmtRub, fmtInt, upsertMonth, updateConfig, clearHistory, buildCsv, describeMonthForm, describeHistoryRows, describeCharts } from './app.js?v=3'; // ?v= must match index.html's tokens — bump together per AGENTS.md cache-bust rule
+import { loadState, saveState } from './storage.js?v=3';
 
 let state = { config: [...DEFAULT_CONFIG], history: [] };
 let mode = 'volume', curTab = 'tabBills', bannerTxt = '', formObs = null, curMonth = null; // curMonth is the app-level selected month so Bills stays on it across tab switches
@@ -20,7 +20,7 @@ function applyMonthForm() {
   const sel = monthSelect(); if (!curMonth) curMonth = document.querySelector('select[data-el=month]')?.value || monthOptions()[0]; sel.value = curMonth; // one selected month for the whole app, sticky across tabs
   box.append(el('i', '', STR.enterReading), sel);
   describeMonthForm(state, sel.value).fields.forEach(f => box.append(fieldRow(f)));
-  box.append(el('b', 'total')); const tot = box.lastChild; tot.dataset.el = 'total';
+  const totBlock = el('div', 'totBlock'); const totLab = el('i', 'lbl'); totLab.textContent = STR.monthTotal; const tot = el('b', 'total'); tot.dataset.el = 'total'; totBlock.append(totLab, tot); box.append(totBlock); // design v2: the month's total is the sheet's anchor figure — caption + big number on a tonal block (refreshPreviews repaints only the number)
   const save = document.createElement('button'); save.textContent = STR.saveMonth; save.dataset.el = 'saveBtn'; // B1: the month above is chosen by the <select>; the button only commits it
   save.onclick = async () => { const vals = collect(box, 'curr'), prices = collect(box, 'price'); if (!Object.keys(vals).length) return toast(STR.nothingEntered); try { const [s, w] = upsertMonth(state, sel.value, vals, prices); await persist(s); if (w.length) toast(STR.negativeDiff); } catch (e) { toast(STR.badNumber); } }; // B6: an all-empty form must not invent a blank month; persist() already painted the transient saved copy
   box.append(save);
@@ -56,7 +56,7 @@ function refreshPreviews(box, sel) { curMonth = sel.value; const d = describeMon
     const pw = r.querySelector('i.prev'); if (pw) pw.textContent = prevText(g); // S8/B1: switching months repaints the odometer baseline in place, not only the preview line
     pv.textContent = g.curr == null ? '' : (g.hint ? `${STR.deltaMark}${g.unit} \u00b7 ${g.hint}` : (g.fixed ? '' : `${fmtInt(g.diff ?? 0)} ${g.unit} \u00b7 `) + fmtRub(g.money ?? 0)) + (g.warn ? ` \u26a0 ${STR.negativeDiff}` : ''); // B3/B10: hint copy replaces the numbers when the baseline or price is unknown
   });
-  const t = box.querySelector('[data-el=total]'); if (t) t.textContent = d.totalMoneyLabel + ': ' + fmtRub(d.totalMoney);
+  const t = box.querySelector('[data-el=total]'); if (t) t.textContent = fmtRub(d.totalMoney); // design v2: the caption sits in the block as its own element, the marker b carries the figure only
 }
 
 // no rounding here: app.js upsertMonth rejects non-integers for meters (STR.badNumber banner) and allows decimal garbage amounts.
@@ -64,7 +64,8 @@ const collect = (box, role) => { const out = {}; box.querySelectorAll('[data-ref
 
 function applyHistory() {
   const box = el('div', 'card'); const btn = document.createElement('button'); btn.textContent = STR.exportCsv; btn.dataset.el = 'exportBtn'; btn.onclick = async () => { try { await exportCsvFile(); } catch (e) { if (e.name !== 'AbortError') toast(String(e)); } };
-  box.append(btn); describeHistoryRows(state).forEach((r) => { const d = el('div', 'row'); d.dataset.month = r.month; d.dataset.total = String(r.total); // P7: one section per month; data-total keeps the money-agreement claim machine-readable (prose parsing broke with the table shape)
+  box.append(btn); const savedMonths = describeHistoryRows(state); if (!savedMonths.length) { const e0 = el('p', 'empty', STR.emptyHistory); e0.dataset.el = 'emptyHistory'; box.append(e0); } // design v2: a fresh profile paints an honest empty state, not a blank sheet under the export button
+  savedMonths.forEach((r) => { const d = el('div', 'row'); d.dataset.month = r.month; d.dataset.total = String(r.total); // P7: one section per month; data-total keeps the money-agreement claim machine-readable (prose parsing broke with the table shape)
     d.append(el('b', '', r.month));
     const t = document.createElement('table'); t.className = 'mtbl'; // P7: a real table so a screen reader / iPhone reads columns, not one long sentence
     const cols = [['meter', STR.colMeter], ['reading', STR.colReading], ['delta', STR.colDelta], ['price', STR.colPrice], ['money', STR.colMoney]]; // headings are STR-only so a translated app keeps its own column words; P7-re-pin: the month's money spent per meter got its own cell (was only implied by the ₽/unit × Δ)
@@ -89,9 +90,10 @@ function applyCharts() {
   describeCharts(state, mode).forEach((g, i) => { const card = el('div', 'chart'); card.dataset.res = g.id; card.style.setProperty('--h', String(200 + i * 13)); // one balanced blue scheme: bar hues stay inside the ~200–260° arc, meters told apart by card header (rule 4, no rainbow)
     card.append(el('h4', '', g.name + (mode === 'volume' && !g.fixed ? ` \u00b7 ${g.unit}` : ''))); // P1: header is the first line of a column-flowed card, bars live in their own row under it
     const bars = el('div', 'bars');
-    if (!g.empty) g.bars.forEach(b => { const bar = document.createElement('i'); bar.dataset.month = b.month; const label = mode === 'money' ? fmtRub(b.v) : fmtInt(b.v); bar.dataset.v = label; bar.style.height = Math.max(2, g.pctOf ? Math.round(Math.abs(b.v) / g.pctOf * 100) : 2) + '%'; if (b.v < 0) bar.classList.add('neg'); bar.append(el('b', 'm', b.month.slice(2))); bars.append(bar); }); // P2: the pill paints no text; a short axis caption sits under the baseline, values get their own legend line
+    if (!g.empty) g.bars.forEach(b => { const bar = document.createElement('i'); bar.dataset.month = b.month; const label = mode === 'money' ? fmtRub(b.v) : fmtInt(b.v); bar.dataset.v = label; bar.style.height = Math.max(2, g.pctOf ? Math.round(Math.abs(b.v) / g.pctOf * 100) : 2) + '%'; if (b.v < 0) bar.classList.add('neg'); bar.append(el('b', 'm', b.month.slice(2))); if (mode === 'volume') bar.append(el('b', 'v', label)); bars.append(bar); }); // P2: the pill paints no text; a short axis caption sits under the baseline; design v2/D5: volume values paint ABOVE the pill (SPEC chart story), money values keep the legend line
     card.append(bars);
-    if (!g.empty) card.append(el('small', 'legend', g.bars.map((b) => `${b.month} ${mode === 'money' ? fmtRub(b.v) : fmtInt(b.v)}`).join(' \u00b7 '))); // P2 legend: month → value pairs, horizontal and readable
+    if (!g.empty && mode === 'money') card.append(el('small', 'legend', g.bars.map((b) => `${b.month} ${fmtRub(b.v)}`).join(' \u00b7 '))); // P2/D5 legend: month → ₽ pairs, horizontal and readable (money mode only — volume values sit above their bars)
+    if (g.empty) { const e0 = el('p', 'empty', STR.emptyCharts); e0.dataset.el = 'emptyCharts'; card.append(e0); } // design v2: a bar-less chart names its empty state instead of showing a bare header
     box.append(card); }); return box;
 }
 

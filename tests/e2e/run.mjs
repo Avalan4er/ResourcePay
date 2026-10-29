@@ -9,12 +9,14 @@ import * as C from './charts-toggle.mjs';
 import * as X from './history-export.mjs';
 import * as T from './tap-and-toast.mjs';
 import * as Q from './ui-polish.mjs'; // bug batch 4 (tasks/bugs-4.md): chart/bill/history legibility on the phone
+import * as D from './design-v2.mjs'; // design v2 (tasks/design-v2.md): bottom nav, button roles, dual scheme, anchored total, empty states
 
 await H.launch(); await H.openPage(H.URL_); await H.initMonths(); // months are calendar-derived here (single source) and asserted against the live <select> in month-entry
 
 // scenario order — dependencies run top-down; each section names itself so a crash still prints FAIL rows for everything collected
 await H.section('persistence-reload: bootSurvival', PP.bootSurvival); // OPFS survival across browser launches is visible at boot
 await H.section('settings-config: freshPrecondition', S.freshPrecondition); // CLEAN-profile precondition: seeds/prices untouched ⇒ no-baseline months are real
+await H.section('design-v2: emptyStates', D.emptyStates); // D6 — nothing saved yet on a clean profile: History/Charts must paint their STR empty states
 await H.section('month-entry: freshOldestForm', M.freshOldestForm); // B1..B8 layout + empty-save refusal on the oldest month (B6)
 await H.section('month-entry: previewsFresh', M.previewsFresh); // B3 honest-preview rule; readings are typed and cleared again ⇒ nothing persists yet
 await H.section('settings-config: applyEdits', S.applyEdits);
@@ -47,6 +49,10 @@ await H.section('ui-polish: flatRows', Q.flatRows);
 await H.section('ui-polish: materialIcons', Q.materialIcons); // MD1 (design pass): vendored Material Icons woff2 renders real glyphs on tabs+pills, tofu fallback goes RED
 await H.section('ui-polish: buttonSize', Q.buttonSize);
 await H.section('ui-polish: monthTables', Q.monthTables); // needs the saved months ⇒ runs before the G7 history wipe below
+await H.section('design-v2: navBottom', D.navBottom); // D1 — fixed bottom navigation bar + toast clearance
+await H.section('design-v2: buttonRoles', D.buttonRoles); // D2 — outlined Export, error Clear, filled-primary Save/Apply
+await H.section('design-v2: darkScheme', D.darkScheme); // D3 — prefers-color-scheme re-tones the token ladder
+await H.section('design-v2: totalBlock', D.totalBlock); // D4 — the month's money is the Bills anchor figure
 await H.section('settings-config: settingsCardG', S.settingsCardG); // G8/G9 card layout on the Settings tab
 await H.section('settings-config: wipeSavedMonths', S.wipeSavedMonths); // destructive ⇒ two taps; months survive/disarm rules
 await H.errorTrailChk(); // ui.js parks glue throws in document.title + console — those trails must not be green-and-lost (rpSaved alone would launder them)

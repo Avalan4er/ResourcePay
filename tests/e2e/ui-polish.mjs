@@ -15,9 +15,9 @@ export async function headersTop() { // P1: a chart card reads "name line ON TOP
   H.chk('P1 at least one card really carries bars, so the header-over-bars claim is not vacuous', geo.some((g) => g.bars > 0));
 }
 
-export async function labelsOutside() { // P2: nothing paints inside the bar pill; months get an axis caption and the card gets a value legend
-  const withBars = (await H.snap()).cards.filter((c) => c.bars.length);
-  const cards = await H.ev(() => [...document.querySelectorAll('div.chart[data-res]')].filter((c) => c.querySelector('i[data-month]')).map((c) => {
+export async function labelsOutside() { // P2: nothing paints inside the bar pill; months get an axis caption; design v2/D5 re-pin: volume values sit ABOVE the pill, money values stay in the legend line — both modes probed, so the claim can't pass on whichever mode the suite happened to leave behind
+  await H.tab('tabCharts'); await H.frames();
+  const probe = () => H.ev(() => [...document.querySelectorAll('div.chart[data-res]')].filter((c) => c.querySelector('i[data-month]')).map((c) => {
     const legend = c.querySelector(':scope > small.legend');
     return { legend: legend ? (legend.textContent || '').trim() : '', bars: [...c.querySelectorAll('i[data-month]')].map((b) => {
       const p = b.getBoundingClientRect(), py = Math.round(p.y), pb = Math.round(p.y + p.height);
@@ -25,13 +25,18 @@ export async function labelsOutside() { // P2: nothing paints inside the bar pil
         const r = k.getBoundingClientRect();
         return { y: Math.round(r.y), h: Math.round(r.height), w: Math.round(r.width), writing: getComputedStyle(k).writingMode, text: (k.textContent || '').trim() };
       });
-      return { month: b.dataset.month, v: String(b.dataset.v ?? ''), inside: kids.filter((k) => k.w > 0 && k.h > 0 && k.y >= py - 1 && k.y + k.h <= pb + 1).length, under: kids.filter((k) => k.h > 0 && k.y >= pb - 1) };
+      return { month: b.dataset.month, v: String(b.dataset.v ?? ''), inside: kids.filter((k) => k.w > 0 && k.h > 0 && k.y >= py - 1 && k.y + k.h <= pb + 1).length, under: kids.filter((k) => k.h > 0 && k.y >= pb - 1), above: kids.filter((k) => k.w > 0 && k.h > 0 && k.y + k.h <= py + 1) };
     }) };
   }));
-  const flat = cards.flatMap((c) => c.bars);
-  H.chk('P2 no painted text sits INSIDE a bar pill (the rotated micro-label in the colour block was the bug)', withBars.length > 0 && flat.length > 0 && flat.every((b) => b.inside === 0));
+  await H.click('[data-for=chartVolume][type=radio]'); await H.beat(); // pick volume deterministically...
+  const vol = await probe();
+  await H.click('[data-el=modeToggle]'); await H.beat(); // ...then money
+  const mon = await probe();
+  await H.click('[data-for=chartVolume][type=radio]'); await H.beat(); // leave the suite in volume mode, the state the rest of the pass historically expects
+  const flat = [...vol, ...mon].flatMap((c) => c.bars);
+  H.chk('P2 no painted text sits INSIDE a bar pill in either mode (the rotated micro-label in the colour block was the bug)', vol.length > 0 && flat.length > 0 && flat.every((b) => b.inside === 0));
   H.chk('P2 every month is named on a horizontal axis caption under its bar (short YY-MM form so it fits the slot)', flat.every((b) => b.under.some((k) => k.text.includes(String(b.month).slice(2)) && k.writing === 'horizontal-tb')));
-  H.chk('P2 every chart card with bars carries one horizontal legend naming each month and its value', cards.length > 0 && cards.every((c) => c.legend.length > 4 && c.bars.every((b) => String(b.v).length > 0 && c.legend.includes(String(b.month)) && c.legend.includes(String(b.v)))));
+  H.chk('P2/D5 volume mode paints each value label ABOVE its bar (horizontal, matching data-v) and money mode carries the month→₽ legend', vol.every((c) => c.bars.every((b) => b.above.some((k) => k.text === b.v && k.writing === 'horizontal-tb'))) && mon.length > 0 && mon.every((c) => c.legend.length > 4 && c.bars.every((b) => String(b.v).length > 0 && c.legend.includes(String(b.month)) && c.legend.includes(String(b.v)))));
 }
 
 export async function billsPolish() { // P3 (calc line renders struck-through) + P4 (the ₽/unit row states no price figure)

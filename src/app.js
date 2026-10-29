@@ -12,6 +12,7 @@ export const STR = {
   lblAmount: 'месячная стоимость ₽', addMeterTitle: 'Добавить новый счетчик', clearHistory: 'Отчистить историю', confirmClear: 'Нажмите еще раз чтобы подтвердить отчистку истории',
   lblReading: 'текущие показания', lblPrice: '₽ за ед.', lblName: 'название', lblUnit: 'единицы измерения', lblSeedBase: 'последние показания', lblActive: 'активный', lblFixed: 'фиксированная месячная плата',
   lblPriceOf: '{x} за {unit}', colMeter: 'счетчик', colReading: 'показания', colDelta: '\u0394 показаний', colPrice: '\u20bd за ед', colMoney: '\u20bd сумма', // P4 readout + P7 table headings (placeholders stay translatable); colMoney added with the History money-per-meter column (P7-re-pin)
+  emptyHistory: 'Сохранённых месяцев пока нет', emptyCharts: 'Нет данных — сохраните показания за месяц', // design v2 empty states (History tab / bar-less charts on a fresh profile)
 };
 export const DEFAULT_CONFIG = [
   { id: 'gas', name: 'Газ', unit: 'м³', price: 0, active: true, seed: null },
